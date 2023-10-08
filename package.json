@@ -26,6 +26,7 @@
     "is-extglob": "^2.1.1",
     "is-glob": "^4.0.3",
     "is-number": "^7.0.0",
+    "jsdom": "^22.1.0",
     "lru-cache": "^6.0.0",
     "make-error": "^1.3.6",
     "minimatch": "^3.1.2",
@@ -34,6 +35,7 @@
     "normalize-path": "^3.0.0",
     "picomatch": "^2.3.1",
     "pstree.remy": "^1.1.8",
+    "puppeteer": "^21.3.8",
     "readdirp": "^3.6.0",
     "semver": "^7.5.4",
     "simple-update-notifier": "^2.0.0",
@@ -47,10 +49,12 @@
     "yn": "^3.1.1"
   },
   "devDependencies": {
+    "@types/jsdom": "^21.1.3",
     "nodemon": "^3.0.1",
     "ts-node": "^10.9.1"
   },
   "scripts": {
+    "start": "ts-node-dev --respawn --transpileOnly src/app.ts",
     "test": "nodemon --exec ts-node src/app.ts"
   },
   "author": "",

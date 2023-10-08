@@ -101,7 +101,10 @@ class PhoneticsEngine {
                 isStressed = true;
             }
         }
-        if (!isStressed) {
+        const vowelsOnly = [...this.phoneme].filter((phoneme) => {
+            return phoneme.type !== 'stress';
+        })
+        if (!isStressed && vowelsOnly.length > 1) {
             let phonemeBefore = -1;
             try {
                 phonemeBefore = this.phoneme[beforeIndex].index;
