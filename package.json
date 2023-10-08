@@ -2,7 +2,7 @@
   "name": "typescript-testing",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/app.ts",
   "dependencies": {
     "abbrev": "^1.1.1",
     "acorn": "^8.10.0",
@@ -13,7 +13,6 @@
     "binary-extensions": "^2.2.0",
     "brace-expansion": "^1.1.11",
     "braces": "^3.0.2",
-    "chokidar": "^3.5.3",
     "concat-map": "^0.0.1",
     "create-require": "^1.1.1",
     "debug": "^3.2.7",
@@ -54,9 +53,11 @@
     "ts-node": "^10.9.1"
   },
   "scripts": {
-    "start": "ts-node-dev --respawn --transpileOnly src/app.ts",
-    "test": "nodemon --exec ts-node src/app.ts"
+    "start": "nodemon --exec ts-node src/app.ts",
+    "test": "jest",
+    "build": "tsc",
+    "watch": "tsc --watch"
   },
-  "author": "",
+  "author": "Mahefasoa",
   "license": "ISC"
 }
