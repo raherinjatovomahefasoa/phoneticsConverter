@@ -36,6 +36,7 @@
     "pstree.remy": "^1.1.8",
     "puppeteer": "^21.3.8",
     "readdirp": "^3.6.0",
+    "scroll-to-bottomjs": "^1.1.0",
     "semver": "^7.5.4",
     "simple-update-notifier": "^2.0.0",
     "supports-color": "^5.5.0",

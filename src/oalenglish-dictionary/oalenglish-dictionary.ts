@@ -1,3 +1,4 @@
+import fs from 'fs/promises';
 import puppeteer, { Browser, Page } from 'puppeteer';
 import { JSDOM } from 'jsdom';
 import PhonEngine from '../phonetics-engine/phonetics-engine';
@@ -94,12 +95,23 @@ class OALEnglishDictionary {
     private currentUrl!: string;
     private page!: Page;
     logError = false;
+    private userDataDir = './puppeteer-data';
 
+    private async createUserDataDirectory() {
+        try {
+            // Use fs.access to check if the directory exists
+            await fs.access(this.userDataDir);
+        } catch (error) {
+            // If it doesn't exist, create it
+            await fs.mkdir(this.userDataDir, { recursive: true });
+        }
+    }
     private async initialize() {
+        await this.createUserDataDirectory();
         this.browser = await puppeteer.launch({
             headless: 'new', // Opt in to the new headless mode
-            userDataDir: './puppeteer-data',
-          });
+            userDataDir: this.userDataDir,
+        });
         this.page = await this.browser.newPage();
 
         // Enable request interception
@@ -140,7 +152,9 @@ class OALEnglishDictionary {
         let link = undefined;
         try {
             const linkRaw = this.safeRun<string>(() => url.split('/').pop()?.split('?')[0]);
-            link = linkRaw;
+            if (linkRaw) {
+                link = linkRaw;
+            }
         } catch(e) {
             this.log(e);
         }
