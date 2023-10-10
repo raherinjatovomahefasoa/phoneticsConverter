@@ -110,6 +110,6 @@
   "exclude": [
     "node_modules", // Exclude the node_modules directory
     "dist",        // Exclude the build directory
-    "src/app.ts" // Exclude a specific file
+    // "src/app.ts" // Exclude a specific file
   ]
 }

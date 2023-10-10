@@ -71,10 +71,13 @@ export interface NearbyWord {
 }
 export interface Definition {
     definition?: string;
-    reference?: Reference;
+    reference?: ReferenceGroup;
+}
+export interface ReferenceGroup {
+    hint?: string;
+    references?: Reference[];
 }
 export interface Reference {
-    definition?: string;
     link?: string;
     spelling?: string;
 }
@@ -111,6 +114,7 @@ declare class OALEnglishDictionary {
     private getRPPronunciation;
     private getVariants;
     private getDefinition;
+    private getReference;
     private getLevel;
     private getPartOfSpeech;
     private getWord;

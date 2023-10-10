@@ -559,19 +559,52 @@ class OALEnglishDictionary {
             else {
                 parent = dom;
             }
-            definition.definition = this.safeRun(() => { var _a, _b; return (_b = (_a = parent.querySelector('.sense_single .def')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+            definition.definition = this.safeRun(() => {
+                var _a, _b;
+                const senseSingleElement = Array.from(parent.children).find((child) => child.classList.contains('sense_single'));
+                if (senseSingleElement) {
+                    return (_b = (_a = senseSingleElement.querySelector('.def')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim();
+                }
+            });
             // get reference
-            const subParent = this.safeRun(() => parent.querySelector('.sense_single .xrefs'));
+            const subParent = this.safeRun(() => {
+                const senseSingleElement = Array.from(parent.children).find((child) => child.classList.contains('sense_single'));
+                if (senseSingleElement) {
+                    return parent.querySelector('.sense_single .xrefs');
+                }
+            });
             definition.reference = {
-                definition: this.safeRun(() => { var _a, _b; return (_b = (_a = subParent === null || subParent === void 0 ? void 0 : subParent.querySelector('.prefix')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); }),
-                link: this.safeRun(() => { var _a, _b; return (_b = (_a = subParent === null || subParent === void 0 ? void 0 : subParent.querySelector('.Ref')) === null || _a === void 0 ? void 0 : _a.getAttribute('href')) === null || _b === void 0 ? void 0 : _b.split('/').pop(); }),
-                spelling: this.safeRun(() => { var _a, _b; return (_b = (_a = subParent === null || subParent === void 0 ? void 0 : subParent.querySelector('.Ref .xr-g .xh')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); }),
+                hint: this.safeRun(() => { var _a, _b; return (_b = (_a = subParent === null || subParent === void 0 ? void 0 : subParent.querySelector('.prefix')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); }),
+                references: this.safeRun(() => {
+                    return Array.from(subParent.querySelectorAll('.Ref')).map((refElement) => {
+                        const reference = this.getReference(refElement, true);
+                        return reference;
+                    });
+                }) || [],
             };
         }
         catch (e) {
             this.log(e);
         }
         return definition;
+    }
+    getReference(dom, parentElement = false) {
+        let reference = {};
+        try {
+            let parent;
+            if (!parentElement) {
+                parent = dom.querySelector('.Ref');
+            }
+            else {
+                parent = dom;
+            }
+            reference.link = this.safeRun(() => { var _a; return (_a = parent.getAttribute('href')) === null || _a === void 0 ? void 0 : _a.split('=').pop(); });
+            reference.spelling = this.safeRun(() => { var _a, _b; return (_b = (_a = parent.querySelector('.xr-g .xh')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+        }
+        catch (e) {
+            this.log(e);
+        }
+        return reference;
     }
     getLevel(dom, parentElement = false) {
         let result = undefined;

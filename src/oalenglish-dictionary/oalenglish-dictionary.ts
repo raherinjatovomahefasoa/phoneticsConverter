@@ -92,10 +92,15 @@ export interface NearbyWord {
 
 export interface Definition {
     definition?: string;
-    reference?: Reference;
+    reference?: ReferenceGroup;
 }
+
+export interface ReferenceGroup {
+    hint?: string;
+    references?: Reference[];
+}
+
 export interface Reference {
-    definition?: string;
     link?: string;
     spelling?: string;
 }
@@ -608,18 +613,54 @@ class OALEnglishDictionary {
             } else {
                 parent = dom as Element;
             }
-            definition.definition = this.safeRun<string>(() => parent.querySelector('.sense_single .def')?.textContent?.trim());
+            definition.definition = this.safeRun<string>(() => {
+                const senseSingleElement = Array.from(parent.children).find((child) =>
+                    child.classList.contains('sense_single')
+                );
+                if (senseSingleElement) {
+                    return senseSingleElement.querySelector('.def')?.textContent?.trim();
+                }
+            });
             // get reference
-            const subParent = this.safeRun<Element>(() => parent.querySelector('.sense_single .xrefs'));
+            const subParent = this.safeRun<Element>(() => {
+                const senseSingleElement = Array.from(parent.children).find((child) =>
+                    child.classList.contains('sense_single')
+                );
+                if (senseSingleElement) {
+                    return parent.querySelector('.sense_single .xrefs')
+                }
+            });
             definition.reference = {
-                definition: this.safeRun<string>(() => subParent?.querySelector('.prefix')?.textContent?.trim()),
-                link: this.safeRun<string>(() => subParent?.querySelector('.Ref')?.getAttribute('href')?.split('/').pop()),
-                spelling: this.safeRun<string>(() => subParent?.querySelector('.Ref .xr-g .xh')?.textContent?.trim()),
+                hint: this.safeRun<string>(() => subParent?.querySelector('.prefix')?.textContent?.trim()),
+                references: this.safeRun<Reference[]>(() => {
+                    return Array.from((subParent as Element).querySelectorAll('.Ref')).map((refElement) => {
+                        const reference = this.getReference(refElement, true);
+                        return reference;
+                    });
+                }) || [],
             }
         } catch (e) {
             this.log(e);
         }
         return definition;
+    }
+
+    private getReference(dom: Document | Element, parentElement = false): Reference{
+        let reference: Reference  = {};
+        try {
+            let parent: Element;
+            if (!parentElement) {
+                parent = dom.querySelector('.Ref') as HTMLDivElement;
+                
+            } else {
+                parent = dom as Element;
+            }
+            reference.link = this.safeRun<string>(() => parent.getAttribute('href')?.split('=').pop());
+            reference.spelling = this.safeRun<string>(() => parent.querySelector('.xr-g .xh')?.textContent?.trim());
+        } catch (e) {
+            this.log(e);
+        }
+        return reference;
     }
 
     private getLevel(dom: Document | Element, parentElement = false): string | undefined{

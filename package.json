@@ -1,8 +1,17 @@
 {
-  "name": "ewm-dic-engine",
-  "version": "1.0.0",
+  "name": "ewm-dico-engine",
+  "version": "1.0.1",
   "description": "",
-  "main": "dist/",
+  "files": [
+    "dist/gif-engine/gif-engine.js",
+    "dist/gif-engine/gif-engine.d.ts",
+    "dist/image-engine/image-engine.js",
+    "dist/image-engine/image-engine.d.ts",
+    "dist/oalenglish-dictionary/oalenglish-dictionary.js",
+    "dist/oalenglish-dictionary/oalenglish-dictionary.d.ts",
+    "dist/phonetics-engine/phonetics-engine.js",
+    "dist/phonetics-engine/phonetics-engine.d.ts"
+  ],
   "dependencies": {
     "abbrev": "^1.1.1",
     "acorn": "^8.10.0",
