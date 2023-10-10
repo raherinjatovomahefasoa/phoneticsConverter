@@ -3,11 +3,8 @@ import GifImages from './gif-engine/gif-engine';
 import OALDic from './oalenglish-dictionary/oalenglish-dictionary';
 
 (async () => {
-    const word = 'fuck';
-    let reuslt: any = await OALDic().searchWord(word);
-    console.log(reuslt);
-    reuslt = await StockImage().search(word);
-    console.log(reuslt);
-    reuslt = await GifImages().search(word);
-    console.log(reuslt);
+    // const word = 'good';
+    // let entry = await OALDic().searchWord(word);
+    // const savedEntry = await OALDic().saveSounds(entry);
+    // console.log((savedEntry as any).inflections[0].phonetics);
 })()

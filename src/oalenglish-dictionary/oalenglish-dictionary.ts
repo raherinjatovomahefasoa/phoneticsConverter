@@ -2,6 +2,9 @@ import fs from 'fs/promises';
 import puppeteer, { Browser, Page } from 'puppeteer';
 import { JSDOM } from 'jsdom';
 import PhonEngine from '../phonetics-engine/phonetics-engine';
+import { v4 as uuidv4 } from 'uuid';
+import axios from 'axios';
+import * as path from 'path';
 
 export interface Pronunciation {
     phonetics: string;
@@ -150,6 +153,55 @@ class OALEnglishDictionary {
         return this.scrape(htmlContent);
     }
 
+    async saveSounds<T>(obj: T, spelling?: string): Promise<T> {
+            // Base case: if obj is not an object, return it as is
+            if (typeof obj !== 'object' || obj === null) {
+                return obj;
+            }
+            // Initialize a new object to store the modified values
+            const modifiedObj: any = Array.isArray(obj) ? [] : {};
+            const title = (obj as any).spelling || spelling || 'word';
+            for (const key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    // Recursively call modifySoundKey for nested objects
+                    modifiedObj[key] = await this.saveSounds(obj[key], title);
+                    // Check if the key is 'sound', and if so, run the callback function
+                    if (key === 'sound') {
+                        if (obj[key]) {
+                            await this.safeRun(async () => {
+                                modifiedObj[key] = await this.downloadAndSaveMp3(obj[key] as string, title);
+                            })
+                        }
+                    }
+                }
+            }
+        return modifiedObj;
+    }
+    private async downloadAndSaveMp3(url: string, name: string): Promise<string> {
+        try {
+            // Use Axios to download the MP3 file
+            const response = await axios.get(url, { responseType: 'arraybuffer' });
+            // Generate a unique filename
+            const uniqueString = uuidv4();
+            const fileExtension = '.mp3'; // Assuming it's an MP3 file
+            let title = name.toLocaleLowerCase().trim().replace(/\s/g, '-'); // Default title if 'title' is not provided
+        
+            // Sanitize the title before constructing the new file name
+            title = this.sanitizeFileName(title);
+            const newFileName = `${title}_${uniqueString}${fileExtension}`;
+            // Save the downloaded file to the 'uploads' directory
+            const filePath = path.join(__dirname, '../../uploads', newFileName);
+            await fs.writeFile(filePath, response.data);
+        
+            return newFileName;
+        } catch (error) {
+            return url;
+        }
+    }
+    private sanitizeFileName = (fileName: string) => {
+        // Replace characters not allowed in file names with underscores
+        return fileName.replace(/[^a-zA-Z0-9-_\.]/g, '_');
+    };
     async searchWord(query: string): Promise<WordEntry> {
         await this.initialize();
         const htmlContent = await this.getHtml(query);

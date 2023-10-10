@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -16,11 +39,18 @@ const promises_1 = __importDefault(require("fs/promises"));
 const puppeteer_1 = __importDefault(require("puppeteer"));
 const jsdom_1 = require("jsdom");
 const phonetics_engine_1 = __importDefault(require("../phonetics-engine/phonetics-engine"));
+const uuid_1 = require("uuid");
+const axios_1 = __importDefault(require("axios"));
+const path = __importStar(require("path"));
 class OALEnglishDictionary {
     constructor() {
         this.linkBase = 'https://www.oxfordlearnersdictionaries.com/definition/english/';
         this.logError = false;
         this.userDataDir = './puppeteer-data/oadl-engine';
+        this.sanitizeFileName = (fileName) => {
+            // Replace characters not allowed in file names with underscores
+            return fileName.replace(/[^a-zA-Z0-9-_\.]/g, '_');
+        };
     }
     createUserDataDirectory() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -65,6 +95,54 @@ class OALEnglishDictionary {
             this.close();
             // const htmlContent = await fs.readFile('test.html', 'utf8');
             return this.scrape(htmlContent);
+        });
+    }
+    saveSounds(obj, spelling) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Base case: if obj is not an object, return it as is
+            if (typeof obj !== 'object' || obj === null) {
+                return obj;
+            }
+            // Initialize a new object to store the modified values
+            const modifiedObj = Array.isArray(obj) ? [] : {};
+            const title = obj.spelling || spelling || 'word';
+            for (const key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    // Recursively call modifySoundKey for nested objects
+                    modifiedObj[key] = yield this.saveSounds(obj[key], title);
+                    // Check if the key is 'sound', and if so, run the callback function
+                    if (key === 'sound') {
+                        if (obj[key]) {
+                            yield this.safeRun(() => __awaiter(this, void 0, void 0, function* () {
+                                modifiedObj[key] = yield this.downloadAndSaveMp3(obj[key], title);
+                            }));
+                        }
+                    }
+                }
+            }
+            return modifiedObj;
+        });
+    }
+    downloadAndSaveMp3(url, name) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                // Use Axios to download the MP3 file
+                const response = yield axios_1.default.get(url, { responseType: 'arraybuffer' });
+                // Generate a unique filename
+                const uniqueString = (0, uuid_1.v4)();
+                const fileExtension = '.mp3'; // Assuming it's an MP3 file
+                let title = name.toLocaleLowerCase().trim().replace(/\s/g, '-'); // Default title if 'title' is not provided
+                // Sanitize the title before constructing the new file name
+                title = this.sanitizeFileName(title);
+                const newFileName = `${title}_${uniqueString}${fileExtension}`;
+                // Save the downloaded file to the 'uploads' directory
+                const filePath = path.join(__dirname, '../../uploads', newFileName);
+                yield promises_1.default.writeFile(filePath, response.data);
+                return newFileName;
+            }
+            catch (error) {
+                return url;
+            }
         });
     }
     searchWord(query) {
