@@ -57,9 +57,15 @@ export class SenseEntry {
 }
 
 export class SenseExample {
+    labels?: string;
     cf?: string;
-    example?: string;
+    sentence?: SentenceExample;
+}
+
+export class SentenceExample {
+    sentence?: string;
     highlight?: string;
+    gloss?: string;
 }
 
 export class Phonetics {
@@ -125,7 +131,6 @@ class OALEnglishDictionary {
         }
     }
     private async initialize() {
-        console.log('start');
         await this.createUserDataDirectory();
         this.browser = await puppeteer.launch({
             headless: 'new', // Opt in to the new headless mode
@@ -361,7 +366,20 @@ class OALEnglishDictionary {
         }
         return result;
     }
-
+    private getSentenceExample(senteceElement: Element): SentenceExample {
+        let sentenceExample: SentenceExample = {};
+        try {
+            const container = senteceElement;
+            if (container) {
+                sentenceExample.sentence = this.safeRun<string>(() => container?.textContent?.trim());
+                sentenceExample.gloss = this.safeRun<string>(() => container.querySelector('.gloss')?.textContent?.trim());
+                sentenceExample.highlight = this.safeRun<string>(() => container.querySelector('.cl')?.textContent?.trim());
+            }
+        } catch (e) {
+            this.log(e);
+        }
+        return sentenceExample;
+    }
     private getSenseExamples(senseElement: Element): SenseExample[] {
         let result: SenseExample[] = [];
         try {
@@ -370,9 +388,8 @@ class OALEnglishDictionary {
                 const examplesRaw = Array.from(container.children);
                 const examples = examplesRaw.map((exampleElement) => {
                     const example: SenseExample = {};
+                    example.labels = this.safeRun<string>(() => exampleElement.querySelector('.labels')?.textContent?.trim());
                     example.cf = this.safeRun<string>(() => exampleElement.querySelector('.cf')?.textContent?.trim());
-                    example.example = this.safeRun<string>(() => exampleElement.querySelector('.x')?.textContent?.trim());
-                    example.highlight = this.safeRun<string>(() => exampleElement.querySelector('.cl')?.textContent?.trim());
                     return example;
                 });
                 result = examples;

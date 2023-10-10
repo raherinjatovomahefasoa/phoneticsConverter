@@ -109,7 +109,6 @@ class OALEnglishDictionary {
     }
     initialize() {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('start');
             yield this.createUserDataDirectory();
             this.browser = yield puppeteer_1.default.launch({
                 headless: 'new',
