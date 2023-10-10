@@ -105,7 +105,7 @@ class OALEnglishDictionary {
     private currentUrl!: string;
     private page!: Page;
     logError = false;
-    private userDataDir = './puppeteer-data';
+    private userDataDir = './puppeteer-data/oadl-engine';
 
     private async createUserDataDirectory() {
         try {

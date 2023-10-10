@@ -12,7 +12,7 @@ class iStockEngine {
     private currentUrl!: string;
     private page!: Page;
     logError = false;
-    private userDataDir = './puppeteer-data';
+    private userDataDir = './puppeteer-data/image-engine';
 
     private async createUserDataDirectory() {
         try {

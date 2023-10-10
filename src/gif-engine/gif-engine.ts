@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import puppeteer, { Browser, Page } from 'puppeteer';
 import { JSDOM } from 'jsdom';
-import scrollToBottom from 'scroll-to-bottomjs';
+// import scrollToBottom from 'scroll-to-bottomjs';
 export interface GifImage {
     src?: string;
 }
@@ -12,7 +12,7 @@ class GifEngine {
     private currentUrl!: string;
     private page!: Page;
     logError = false;
-    private userDataDir = './puppeteer-data';
+    private userDataDir = './puppeteer-data/gif-engine';
 
     private async createUserDataDirectory() {
         try {
@@ -106,8 +106,8 @@ class GifEngine {
         await this.page.goto(`${this.linkBase}${link}`);
         // Get the HTML content of the page
         // Scroll down the page to load more images
-        await this.page.evaluate(scrollToBottom);
-        // await this.page.waitForTimeout(1000);
+        // await this.page.evaluate(scrollToBottom);
+        await this.page.waitForTimeout(1000);
         const pageHTML = await this.page.content();
         this.currentUrl = this.page.url();
         // Return the HTML content as a string
