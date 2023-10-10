@@ -35,6 +35,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Reference = exports.ReferenceGroup = exports.Definition = exports.NearbyWord = exports.WordEntry = exports.Phonetics = exports.SenseExample = exports.SenseEntry = exports.Sense = exports.Inflection = exports.VerbForm = exports.Variant = exports.Idiom = exports.Pronunciation = void 0;
 const promises_1 = __importDefault(require("fs/promises"));
 const puppeteer_1 = __importDefault(require("puppeteer"));
 const jsdom_1 = require("jsdom");
@@ -42,6 +43,48 @@ const phonetics_engine_1 = __importDefault(require("../phonetics-engine/phonetic
 const uuid_1 = require("uuid");
 const axios_1 = __importDefault(require("axios"));
 const path = __importStar(require("path"));
+class Pronunciation {
+}
+exports.Pronunciation = Pronunciation;
+class Idiom {
+}
+exports.Idiom = Idiom;
+class Variant {
+}
+exports.Variant = Variant;
+class VerbForm {
+}
+exports.VerbForm = VerbForm;
+class Inflection {
+}
+exports.Inflection = Inflection;
+class Sense {
+}
+exports.Sense = Sense;
+class SenseEntry {
+}
+exports.SenseEntry = SenseEntry;
+class SenseExample {
+}
+exports.SenseExample = SenseExample;
+class Phonetics {
+}
+exports.Phonetics = Phonetics;
+class WordEntry {
+}
+exports.WordEntry = WordEntry;
+class NearbyWord {
+}
+exports.NearbyWord = NearbyWord;
+class Definition {
+}
+exports.Definition = Definition;
+class ReferenceGroup {
+}
+exports.ReferenceGroup = ReferenceGroup;
+class Reference {
+}
+exports.Reference = Reference;
 class OALEnglishDictionary {
     constructor() {
         this.linkBase = 'https://www.oxfordlearnersdictionaries.com/definition/english/';

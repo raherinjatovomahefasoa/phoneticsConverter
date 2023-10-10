@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import puppeteer, { Browser, Page } from 'puppeteer';
 import { JSDOM } from 'jsdom';
 // import scrollToBottom from 'scroll-to-bottomjs';
-export interface GifImage {
+export class GifImage {
     src?: string;
 }
 

@@ -1,4 +1,4 @@
-export interface GifImage {
+export declare class GifImage {
     src?: string;
 }
 declare class GifEngine {

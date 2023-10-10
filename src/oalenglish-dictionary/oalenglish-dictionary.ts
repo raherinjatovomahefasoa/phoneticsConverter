@@ -6,12 +6,12 @@ import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import * as path from 'path';
 
-export interface Pronunciation {
-    phonetics: string;
-    sound: string;
+export class Pronunciation {
+    phonetics?: string;
+    sound?: string;
 }
 
-export interface Idiom {
+export class Idiom {
     idiom?: string;
     definiton?: string;
     usage?: string;
@@ -23,25 +23,25 @@ type VerbFormType = 'root' | 'thirdps' | 'past' | 'pastpart' | 'prespart' | 'neg
 
 export type VerbFormGroup = VerbForm[];
 
-export interface Variant {
+export class Variant {
     variant?: string;
     highlight?: string[];
 }
 
-export interface VerbForm {
+export class VerbForm {
     type?: VerbFormType;
     prefix?: string;
     spelling?: string;
     phonetics?: Phonetics;
 }
 
-export interface Inflection {
+export class Inflection {
     type?: string;
     spelling?: string;
     phonetics?: Phonetics;
 }
 
-export interface Sense {
+export class Sense {
     level?: string;
     variants?: Variant[];
     partOfSpeech?: string;
@@ -51,23 +51,23 @@ export interface Sense {
     examples?: SenseExample[];
 }
 
-export interface SenseEntry {
+export class SenseEntry {
     meaning?: string;
     senses?: Sense[];
 }
 
-export interface SenseExample {
+export class SenseExample {
     cf?: string;
     example?: string;
     highlight?: string;
 }
 
-export interface Phonetics {
+export class Phonetics {
     british?: Pronunciation[];
     northAmerican?: Pronunciation[];
 }
 
-export interface WordEntry {
+export class WordEntry {
     link?: string;
     spelling?: string;
     partOfSpeech?: string;
@@ -84,23 +84,23 @@ export interface WordEntry {
     resultList?: string[];
 }
 
-export interface NearbyWord {
+export class NearbyWord {
     link?: string;
     spelling?: string;
     partOfSpeech?: string;
 }
 
-export interface Definition {
+export class Definition {
     definition?: string;
     reference?: ReferenceGroup;
 }
 
-export interface ReferenceGroup {
+export class ReferenceGroup {
     hint?: string;
     references?: Reference[];
 }
 
-export interface Reference {
+export class Reference {
     link?: string;
     spelling?: string;
 }

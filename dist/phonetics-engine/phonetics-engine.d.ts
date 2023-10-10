@@ -1,4 +1,4 @@
-export interface Phoneme {
+export declare class Phoneme {
     index: number;
     phoneme: string;
     type: phonemeType;

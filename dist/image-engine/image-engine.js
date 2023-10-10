@@ -12,9 +12,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.StockImage = void 0;
 const promises_1 = __importDefault(require("fs/promises"));
 const puppeteer_1 = __importDefault(require("puppeteer"));
 const jsdom_1 = require("jsdom");
+class StockImage {
+}
+exports.StockImage = StockImage;
 class iStockEngine {
     constructor() {
         this.linkBase = 'https://www.istockphoto.com/search/2/image?phrase=';

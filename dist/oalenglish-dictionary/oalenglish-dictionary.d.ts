@@ -1,8 +1,8 @@
-export interface Pronunciation {
-    phonetics: string;
-    sound: string;
+export declare class Pronunciation {
+    phonetics?: string;
+    sound?: string;
 }
-export interface Idiom {
+export declare class Idiom {
     idiom?: string;
     definiton?: string;
     usage?: string;
@@ -11,22 +11,22 @@ export interface Idiom {
 }
 type VerbFormType = 'root' | 'thirdps' | 'past' | 'pastpart' | 'prespart' | 'neg' | 'short';
 export type VerbFormGroup = VerbForm[];
-export interface Variant {
+export declare class Variant {
     variant?: string;
     highlight?: string[];
 }
-export interface VerbForm {
+export declare class VerbForm {
     type?: VerbFormType;
     prefix?: string;
     spelling?: string;
     phonetics?: Phonetics;
 }
-export interface Inflection {
+export declare class Inflection {
     type?: string;
     spelling?: string;
     phonetics?: Phonetics;
 }
-export interface Sense {
+export declare class Sense {
     level?: string;
     variants?: Variant[];
     partOfSpeech?: string;
@@ -35,20 +35,20 @@ export interface Sense {
     cf?: string;
     examples?: SenseExample[];
 }
-export interface SenseEntry {
+export declare class SenseEntry {
     meaning?: string;
     senses?: Sense[];
 }
-export interface SenseExample {
+export declare class SenseExample {
     cf?: string;
     example?: string;
     highlight?: string;
 }
-export interface Phonetics {
+export declare class Phonetics {
     british?: Pronunciation[];
     northAmerican?: Pronunciation[];
 }
-export interface WordEntry {
+export declare class WordEntry {
     link?: string;
     spelling?: string;
     partOfSpeech?: string;
@@ -64,20 +64,20 @@ export interface WordEntry {
     nearbyWords?: NearbyWord[];
     resultList?: string[];
 }
-export interface NearbyWord {
+export declare class NearbyWord {
     link?: string;
     spelling?: string;
     partOfSpeech?: string;
 }
-export interface Definition {
+export declare class Definition {
     definition?: string;
     reference?: ReferenceGroup;
 }
-export interface ReferenceGroup {
+export declare class ReferenceGroup {
     hint?: string;
     references?: Reference[];
 }
-export interface Reference {
+export declare class Reference {
     link?: string;
     spelling?: string;
 }

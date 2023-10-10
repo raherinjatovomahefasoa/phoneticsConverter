@@ -1,4 +1,4 @@
-export interface StockImage {
+export declare class StockImage {
     src?: string;
 }
 declare class iStockEngine {

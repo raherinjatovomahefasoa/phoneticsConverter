@@ -1,8 +1,8 @@
 
-export interface Phoneme {
-    index: number;
-    phoneme: string;
-    type: phonemeType;
+export class Phoneme {
+    index!: number;
+    phoneme!: string;
+    type!: phonemeType;
 }
 
 export type phonemeType = 'stress' | 'sVowel' | 'uVowel';

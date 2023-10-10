@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import puppeteer, { Browser, Page } from 'puppeteer';
 import { JSDOM } from 'jsdom';
 
-export interface StockImage {
+export class StockImage {
     src?: string;
 }
 

@@ -1,5 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Phoneme = void 0;
+class Phoneme {
+}
+exports.Phoneme = Phoneme;
 class PhoneticsEngine {
     constructor(phonetics) {
         this.convertedPhonetics = [];
