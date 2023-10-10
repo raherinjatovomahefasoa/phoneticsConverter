@@ -28,6 +28,8 @@ class iStockEngine {
         this.browser = await puppeteer.launch({
             headless: 'new', // Opt in to the new headless mode
             userDataDir: this.userDataDir,
+            args: ['--no-sandbox', '--disable-setuid-sandbox'], // Use these flags for better compatibility
+            devtools: false, // Disable DevTools
         });
         this.page = await this.browser.newPage();
         await this.page.setViewport({ width: 1280, height: 10000 });
@@ -99,8 +101,10 @@ class iStockEngine {
     }
 
     private async getHtmlByLink(link: string): Promise<string> {
-        await this.page.goto(`${this.linkBase}${link}`);
+        await this.page.goto(`${this.linkBase}${link}`, { waitUntil: 'domcontentloaded' });
         // Get the HTML content of the page
+        const searchResultsSelector = '.DE6jTiCmOG8IPNVbM7pJ';
+        await this.page.waitForSelector(searchResultsSelector);
         const pageHTML = await this.page.content();
         this.currentUrl = this.page.url();
         // Return the HTML content as a string

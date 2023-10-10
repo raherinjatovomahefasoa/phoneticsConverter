@@ -14,7 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const oalenglish_dictionary_1 = __importDefault(require("./oalenglish-dictionary/oalenglish-dictionary"));
 (() => __awaiter(void 0, void 0, void 0, function* () {
-    const word = 'good';
+    const word = 'walk';
     let entry = yield (0, oalenglish_dictionary_1.default)().searchWord(word);
     console.log(entry);
     // const savedEntry = await OALDic().saveSounds(entry);

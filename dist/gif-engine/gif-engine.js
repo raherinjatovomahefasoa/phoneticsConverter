@@ -44,6 +44,8 @@ class GifEngine {
             this.browser = yield puppeteer_1.default.launch({
                 headless: 'new',
                 userDataDir: this.userDataDir,
+                args: ['--no-sandbox', '--disable-setuid-sandbox'],
+                devtools: false, // Disable DevTools
             });
             this.page = yield this.browser.newPage();
             // Enable request interception
@@ -116,11 +118,13 @@ class GifEngine {
     }
     getHtmlByLink(link) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.page.goto(`${this.linkBase}${link}`);
+            yield this.page.goto(`${this.linkBase}${link}`, { waitUntil: 'domcontentloaded' });
             // Get the HTML content of the page
             // Scroll down the page to load more images
             // await this.page.evaluate(scrollToBottom);
-            yield this.page.waitForTimeout(1000);
+            const searchResultsSelector = '.giphy-grid';
+            yield this.page.waitForSelector(searchResultsSelector);
+            yield this.page.waitForTimeout(1400);
             const pageHTML = yield this.page.content();
             this.currentUrl = this.page.url();
             // Return the HTML content as a string

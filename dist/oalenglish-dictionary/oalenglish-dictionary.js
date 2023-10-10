@@ -109,10 +109,13 @@ class OALEnglishDictionary {
     }
     initialize() {
         return __awaiter(this, void 0, void 0, function* () {
+            console.log('start');
             yield this.createUserDataDirectory();
             this.browser = yield puppeteer_1.default.launch({
                 headless: 'new',
                 userDataDir: this.userDataDir,
+                args: ['--no-sandbox', '--disable-setuid-sandbox'],
+                devtools: false, // Disable DevTools
             });
             this.page = yield this.browser.newPage();
             // Enable request interception
@@ -715,8 +718,10 @@ class OALEnglishDictionary {
     }
     getHtmlByLink(link) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.page.goto(`${this.linkBase}${link}`);
+            yield this.page.goto(`${this.linkBase}${link}`, { waitUntil: 'domcontentloaded' });
             // Get the HTML content of the page
+            const searchResultsSelector = '.responsive_row';
+            yield this.page.waitForSelector(searchResultsSelector);
             const pageHTML = yield this.page.content();
             this.currentUrl = this.page.url();
             // Return the HTML content as a string
@@ -725,14 +730,16 @@ class OALEnglishDictionary {
     }
     getHtml(query) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.page.goto(this.linkBase);
+            yield this.page.goto(this.linkBase, { waitUntil: 'domcontentloaded' });
+            // await this.page.waitForNavigation({ waitUntil: 'networkidle0' })
             const searchInputSelector = '#q';
             const searchButtonSelector = '#search-btn input[type="submit"]'; // Modify selector for the button
-            yield this.page.waitForSelector(searchButtonSelector);
+            yield this.page.waitForSelector(searchInputSelector);
             // Type the query into the search input field
             yield this.page.type(searchInputSelector, query);
             // Click the search button
             yield this.page.click(searchButtonSelector);
+            yield this.page.waitForNavigation({ waitUntil: 'domcontentloaded' });
             // Wait for the search results to load (you may need to adjust the selector and wait time)
             const searchResultsSelector = '.responsive_row';
             yield this.page.waitForSelector(searchResultsSelector);

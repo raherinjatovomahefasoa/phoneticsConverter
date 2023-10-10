@@ -29,6 +29,8 @@ class GifEngine {
         this.browser = await puppeteer.launch({
             headless: 'new', // Opt in to the new headless mode
             userDataDir: this.userDataDir,
+            args: ['--no-sandbox', '--disable-setuid-sandbox'], // Use these flags for better compatibility
+            devtools: false, // Disable DevTools
         });
         this.page = await this.browser.newPage();
 
@@ -103,11 +105,13 @@ class GifEngine {
     }
 
     private async getHtmlByLink(link: string): Promise<string> {
-        await this.page.goto(`${this.linkBase}${link}`);
+        await this.page.goto(`${this.linkBase}${link}`, { waitUntil: 'domcontentloaded' });
         // Get the HTML content of the page
         // Scroll down the page to load more images
         // await this.page.evaluate(scrollToBottom);
-        await this.page.waitForTimeout(1000);
+        const searchResultsSelector = '.giphy-grid';
+        await this.page.waitForSelector(searchResultsSelector);
+        await this.page.waitForTimeout(1400);
         const pageHTML = await this.page.content();
         this.currentUrl = this.page.url();
         // Return the HTML content as a string
