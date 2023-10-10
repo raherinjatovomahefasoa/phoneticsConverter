@@ -20,7 +20,7 @@ class OALEnglishDictionary {
     constructor() {
         this.linkBase = 'https://www.oxfordlearnersdictionaries.com/definition/english/';
         this.logError = false;
-        this.userDataDir = './puppeteer-data';
+        this.userDataDir = './puppeteer-data/oadl-engine';
     }
     createUserDataDirectory() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -469,25 +469,31 @@ class OALEnglishDictionary {
         return result;
     }
     getDefinition(dom, parentElement = false) {
-        let result = undefined;
+        let definition = {};
         try {
             let parent;
             if (!parentElement) {
                 const testParent = this.safeRun(() => dom.querySelector('.entry'));
                 if (testParent) {
                     parent = testParent;
-                    result = this.safeRun(() => { var _a, _b; return (_b = (_a = parent.querySelector('.sense_single .def')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
                 }
             }
             else {
                 parent = dom;
-                result = this.safeRun(() => { var _a, _b; return (_b = (_a = parent.querySelector('.def')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
             }
+            definition.definition = this.safeRun(() => { var _a, _b; return (_b = (_a = parent.querySelector('.sense_single .def')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+            // get reference
+            const subParent = this.safeRun(() => parent.querySelector('.sense_single .xrefs'));
+            definition.reference = {
+                definition: this.safeRun(() => { var _a, _b; return (_b = (_a = subParent === null || subParent === void 0 ? void 0 : subParent.querySelector('.prefix')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); }),
+                link: this.safeRun(() => { var _a, _b; return (_b = (_a = subParent === null || subParent === void 0 ? void 0 : subParent.querySelector('.Ref')) === null || _a === void 0 ? void 0 : _a.getAttribute('href')) === null || _b === void 0 ? void 0 : _b.split('/').pop(); }),
+                spelling: this.safeRun(() => { var _a, _b; return (_b = (_a = subParent === null || subParent === void 0 ? void 0 : subParent.querySelector('.Ref .xr-g .xh')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); }),
+            };
         }
         catch (e) {
             this.log(e);
         }
-        return result;
+        return definition;
     }
     getLevel(dom, parentElement = false) {
         let result = undefined;

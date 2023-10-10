@@ -56,7 +56,7 @@ export interface WordEntry {
     grammar?: string;
     variants?: Variant[];
     phonetics?: Phonetics;
-    definition?: string;
+    definition?: Definition;
     inflections?: Inflection[];
     verbForms?: VerbFormGroup[];
     senses?: SenseEntry[] | Sense[];
@@ -68,6 +68,15 @@ export interface NearbyWord {
     link?: string;
     spelling?: string;
     partOfSpeech?: string;
+}
+export interface Definition {
+    definition?: string;
+    reference?: Reference;
+}
+export interface Reference {
+    definition?: string;
+    link?: string;
+    spelling?: string;
 }
 declare class OALEnglishDictionary {
     constructor();
