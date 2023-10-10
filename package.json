@@ -1,8 +1,8 @@
 {
-  "name": "dico-engine",
+  "name": "ewm-dic-engine",
   "version": "1.0.0",
   "description": "",
-  "main": "src/app.ts",
+  "main": "dist/",
   "dependencies": {
     "abbrev": "^1.1.1",
     "acorn": "^8.10.0",
