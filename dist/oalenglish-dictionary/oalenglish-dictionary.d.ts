@@ -40,9 +40,14 @@ export declare class SenseEntry {
     senses?: Sense[];
 }
 export declare class SenseExample {
+    labels?: string;
     cf?: string;
-    example?: string;
+    sentence?: SentenceExample;
+}
+export declare class SentenceExample {
+    sentence?: string;
     highlight?: string;
+    gloss?: string;
 }
 export declare class Phonetics {
     british?: Pronunciation[];
@@ -104,6 +109,7 @@ declare class OALEnglishDictionary {
     private getMainPhonetics;
     private getInflections;
     private getIdioms;
+    private getSentenceExample;
     private getSenseExamples;
     private getSensesAll;
     private getSenseEntries;

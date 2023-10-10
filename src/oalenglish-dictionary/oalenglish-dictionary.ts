@@ -371,9 +371,9 @@ class OALEnglishDictionary {
         try {
             const container = senteceElement;
             if (container) {
-                sentenceExample.sentence = this.safeRun<string>(() => container?.textContent?.trim());
-                sentenceExample.gloss = this.safeRun<string>(() => container.querySelector('.gloss')?.textContent?.trim());
-                sentenceExample.highlight = this.safeRun<string>(() => container.querySelector('.cl')?.textContent?.trim());
+                sentenceExample.sentence = this.safeRun<string>(() => container.querySelector('.x')?.textContent?.trim());
+                sentenceExample.gloss = this.safeRun<string>(() => container.querySelector('.x .gloss')?.textContent?.trim());
+                sentenceExample.highlight = this.safeRun<string>(() => container.querySelector('.x .cl')?.textContent?.trim());
             }
         } catch (e) {
             this.log(e);
@@ -390,6 +390,7 @@ class OALEnglishDictionary {
                     const example: SenseExample = {};
                     example.labels = this.safeRun<string>(() => exampleElement.querySelector('.labels')?.textContent?.trim());
                     example.cf = this.safeRun<string>(() => exampleElement.querySelector('.cf')?.textContent?.trim());
+                    example.sentence = this.getSentenceExample(exampleElement);
                     return example;
                 });
                 result = examples;

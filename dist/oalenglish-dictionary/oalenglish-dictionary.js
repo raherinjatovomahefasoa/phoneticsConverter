@@ -35,7 +35,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Reference = exports.ReferenceGroup = exports.Definition = exports.NearbyWord = exports.WordEntry = exports.Phonetics = exports.SenseExample = exports.SenseEntry = exports.Sense = exports.Inflection = exports.VerbForm = exports.Variant = exports.Idiom = exports.Pronunciation = void 0;
+exports.Reference = exports.ReferenceGroup = exports.Definition = exports.NearbyWord = exports.WordEntry = exports.Phonetics = exports.SentenceExample = exports.SenseExample = exports.SenseEntry = exports.Sense = exports.Inflection = exports.VerbForm = exports.Variant = exports.Idiom = exports.Pronunciation = void 0;
 const promises_1 = __importDefault(require("fs/promises"));
 const puppeteer_1 = __importDefault(require("puppeteer"));
 const jsdom_1 = require("jsdom");
@@ -67,6 +67,9 @@ exports.SenseEntry = SenseEntry;
 class SenseExample {
 }
 exports.SenseExample = SenseExample;
+class SentenceExample {
+}
+exports.SentenceExample = SentenceExample;
 class Phonetics {
 }
 exports.Phonetics = Phonetics;
@@ -343,6 +346,21 @@ class OALEnglishDictionary {
         }
         return result;
     }
+    getSentenceExample(senteceElement) {
+        let sentenceExample = {};
+        try {
+            const container = senteceElement;
+            if (container) {
+                sentenceExample.sentence = this.safeRun(() => { var _a, _b; return (_b = (_a = container.querySelector('.x')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+                sentenceExample.gloss = this.safeRun(() => { var _a, _b; return (_b = (_a = container.querySelector('.x .gloss')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+                sentenceExample.highlight = this.safeRun(() => { var _a, _b; return (_b = (_a = container.querySelector('.x .cl')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+            }
+        }
+        catch (e) {
+            this.log(e);
+        }
+        return sentenceExample;
+    }
     getSenseExamples(senseElement) {
         let result = [];
         try {
@@ -351,9 +369,9 @@ class OALEnglishDictionary {
                 const examplesRaw = Array.from(container.children);
                 const examples = examplesRaw.map((exampleElement) => {
                     const example = {};
+                    example.labels = this.safeRun(() => { var _a, _b; return (_b = (_a = exampleElement.querySelector('.labels')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
                     example.cf = this.safeRun(() => { var _a, _b; return (_b = (_a = exampleElement.querySelector('.cf')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
-                    example.example = this.safeRun(() => { var _a, _b; return (_b = (_a = exampleElement.querySelector('.x')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
-                    example.highlight = this.safeRun(() => { var _a, _b; return (_b = (_a = exampleElement.querySelector('.cl')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+                    example.sentence = this.getSentenceExample(exampleElement);
                     return example;
                 });
                 result = examples;

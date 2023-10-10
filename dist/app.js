@@ -8,15 +8,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const oalenglish_dictionary_1 = __importDefault(require("./oalenglish-dictionary/oalenglish-dictionary"));
 (() => __awaiter(void 0, void 0, void 0, function* () {
-    const word = 'walk';
-    let entry = yield (0, oalenglish_dictionary_1.default)().searchWord(word);
-    console.log(entry);
+    // const word = 'meet_1';
+    // let entry = await OALDic().searchWordLink(word);
+    // console.log((entry as any).senses[2].senses[0].examples);
     // const savedEntry = await OALDic().saveSounds(entry);
     // console.log((savedEntry as any).inflections[0].phonetics);
 }))();
