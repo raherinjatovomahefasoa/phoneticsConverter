@@ -4,9 +4,9 @@ import OALDic from "./oalenglish-dictionary/oalenglish-dictionary";
 
 
 (async () => {
-    // const word = 'meet_1';
-    // let entry = await OALDic().searchWordLink(word);
-    // console.log((entry as any).senses[2].senses[0].examples);
+    const word = 'walk';
+    let entry = await OALDic().searchWord(word);
+    console.log(entry);
     // const savedEntry = await OALDic().saveSounds(entry);
     // console.log((savedEntry as any).inflections[0].phonetics);
 })()
