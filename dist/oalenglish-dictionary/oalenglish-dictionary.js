@@ -940,6 +940,7 @@ class OALEnglishDictionary {
             }
             catch (e) {
                 this.log(e);
+                this.close();
                 return '';
             }
         });
@@ -968,7 +969,8 @@ class OALEnglishDictionary {
             }
             catch (e) {
                 this.log(e);
-                throw new Error("Error Connecting");
+                this.close();
+                return '';
             }
         });
     }

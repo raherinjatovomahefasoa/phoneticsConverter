@@ -16,7 +16,7 @@ const oalenglish_dictionary_1 = __importDefault(require("./oalenglish-dictionary
 (() => __awaiter(void 0, void 0, void 0, function* () {
     const link = 'get-around';
     const word = 'pants';
-    const wordEntry = yield (0, oalenglish_dictionary_1.default)().searchWordLink(link);
-    // const wordEntry = await OALDic().searchWord(word);
+    // const wordEntry = await OALDic().searchWordLink(link);
+    const wordEntry = yield (0, oalenglish_dictionary_1.default)().searchWord(word);
     console.log(wordEntry);
 }))();

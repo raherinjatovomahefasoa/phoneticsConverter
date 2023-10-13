@@ -974,6 +974,7 @@ class OALEnglishDictionary {
             return pageHTML;
         } catch (e) {
             this.log(e);
+            this.close();
             return '';
         }
     }
@@ -1007,7 +1008,8 @@ class OALEnglishDictionary {
             return pageHTML;
         } catch (e) {
             this.log(e);
-            throw new Error("Error Connecting");
+            this.close();
+            return '';
         }
     }
     private parseHTML(html: string): Document {
