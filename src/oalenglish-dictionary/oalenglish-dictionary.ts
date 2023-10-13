@@ -34,35 +34,48 @@ export class Inflection {
 }
 
 export class Sense {
-    level?: string;
-    variants?: Variant[];
-    partOfSpeech?: string;
-    usage?: string;
-    labels?: string;
-    disclaimer?: string;
-    definition?: string;
+    level?: string; //
+    variants?: Variant[]; //
+    partOfSpeech?: string; //
+    usage?: string;  //
+    labels?: string; //
+    disclaimer?: string; //
+    definition?: string; //
     referenceGroup?: ReferenceGroup;
-    grammar?: string;
-    cf?: string;
-    examples?: SenseExample[];
+    grammar?: string; //
+    cf?: string; //
+    senseTop?: SenseTop;
+    examples?: SenseExample[]; //
 }
 
 export class PhrasalVerbEntry {
     spelling?: string;
+    usage?: string;
+    labels?: string;
+    variants?: Variant[];
+    disclaimer?: string;
     senses?: Sense[];
 }
 export class Idiom {
     idiom?: string;
-    definition?: string;
+    // definition?: string;
     usage?: string;
     labels?: string;
     variants?: Variant[];
-    partOfSpeech?: string;
+    // partOfSpeech?: string;
     disclaimer?: string;
-    referenceGroup?: ReferenceGroup;
-    grammar?: string;
-    cf?: string;
-    examples?: SenseExample[];
+    // referenceGroup?: ReferenceGroup;
+    // grammar?: string;
+    // cf?: string;
+    senses?: Sense[];
+    // examples?: SenseExample[];
+}
+
+export class SenseTop {
+    labels?: string;
+    variants?: Variant[];
+    disclaimer?: string;
+    usage?: string;
 }
 
 export class SenseEntry {
@@ -88,24 +101,24 @@ export class Phonetics {
 }
 
 export class WordEntry {
-    usage?: string;
-    disclaimer?: string;
+    usage?: string; //
+    disclaimer?: string; //
     link?: string;
-    spelling?: string;
-    phrasaVerbEntries?: PhrasalVerbEntry[];
-    partOfSpeech?: string;
-    labels?: string;
-    level?: string;
-    grammar?: string;
-    variants?: Variant[];
-    phonetics?: Phonetics;
-    definition?: string;
-    referenceGroup?: ReferenceGroup;
+    spelling?: string; //
+    phrasalVerbEntries?: PhrasalVerbEntry[];
+    partOfSpeech?: string; //
+    labels?: string; //
+    level?: string; //
+    grammar?: string; //
+    variants?: Variant[]; //
+    phonetics?: Phonetics; //
+    definition?: string; //
+    referenceGroup?: ReferenceGroup; //
     inflections?: Inflection[];
-    verbForms?: VerbFormGroup[];
-    senses?: SenseEntry[] | Sense[];
-    idioms?: Idiom[];
-    phrasalVerbs?: PhrasalVerb[];
+    verbForms?: VerbFormGroup[]; //
+    senses?: SenseEntry[] | Sense[]; //
+    idioms?: Idiom[]; //
+    phrasalVerbs?: PhrasalVerb[]; //
     nearbyWords?: NearbyWord[];
     resultList?: string[];
 }
@@ -315,7 +328,7 @@ class OALEnglishDictionary {
         wordEntry.referenceGroup = this.getReferenceGroup(dom);
         wordEntry.inflections = this.getInflections(dom);
         wordEntry.verbForms = this.getVerbForms(dom);
-        wordEntry.phrasaVerbEntries = this.getPhrasalVerbEntries(dom);
+        wordEntry.phrasalVerbEntries = this.getPhrasalVerbEntries(dom);
         wordEntry.senses = this.getSensesAll(dom);
         wordEntry.idioms = this.getIdioms(dom);
         wordEntry.phrasalVerbs = this.getPhrasalVerbs(dom);
@@ -399,17 +412,24 @@ class OALEnglishDictionary {
                 const idiomsRaw = Array.from(container.querySelectorAll('.idm-g'));
                 const idioms = idiomsRaw.map((idiomElement) => {
                     const idiom: Idiom = {};
-                    idiom.idiom = this.safeRun<string>(() => idiomElement.querySelector('.top-container')?.textContent?.trim());
-                    idiom.definition = this.safeRun<string>(() => idiomElement.querySelector('.def')?.textContent?.trim());
-                    idiom.disclaimer = this.safeRun<string>(() => idiomElement.querySelector('.dis-g')?.textContent?.trim());
-                    idiom.usage = this.safeRun<string>(() => idiomElement.querySelector('.use')?.textContent?.trim());
-                    idiom.labels = this.safeRun<string>(() => idiomElement.querySelector('.labels')?.textContent?.trim());
-                    idiom.examples = this.getSenseExamples(idiomElement);
+                    idiom.idiom = this.safeRun<string>(() => idiomElement.querySelector('.top-container .webtop .idm')?.textContent?.trim());
+                    // idiom.definition = this.safeRun<string>(() => idiomElement.querySelector('.def')?.textContent?.trim());
+                    // idiom.disclaimer = this.safeRun<string>(() => idiomElement.querySelector('.dis-g')?.textContent?.trim());
+                    idiom.usage = this.safeRun<string>(() => idiomElement.querySelector('.top-container .webtop .use')?.textContent?.trim());
+                    idiom.labels = this.safeRun(() => {
+                        return this.getLabels(idiomElement.querySelector('.top-container .webtop') as Element, true);
+                    });
+                    idiom.disclaimer = this.safeRun<string>(() => idiomElement.querySelector('.top-container .webtop .dis-g')?.textContent?.trim());
+                    // idiom.examples = this.getSenseExamples(idiomElement);
                     idiom.variants = this.getVariants(idiomElement, true);
-                    idiom.referenceGroup = this.getReferenceGroup(idiomElement, true);
-                    idiom.grammar = this.getGrammar(idiomElement, true);
-                    idiom.partOfSpeech = this.getPartOfSpeech(idiomElement, true);
-                    idiom.cf = this.safeRun<string>(() => idiomElement.querySelector('.cf')?.textContent?.trim());
+                    idiom.senses = this.safeRun(() => {
+                        const container = idiomElement.querySelector('ol') as Element;
+                        return this.getSenses(container, true);
+                    });
+                    // idiom.referenceGroup = this.getReferenceGroup(idiomElement, true);
+                    // idiom.grammar = this.getGrammar(idiomElement, true);
+                    // idiom.partOfSpeech = this.getPartOfSpeech(idiomElement, true);
+                    // idiom.cf = this.safeRun<string>(() => idiomElement.querySelector('.cf')?.textContent?.trim());
                     return idiom;
                 });
 
@@ -420,6 +440,29 @@ class OALEnglishDictionary {
         }
         return result;
     }
+
+    private getSenseTop(sense: Element): SenseTop {
+        let senseTop: SenseTop = {};
+        try {
+            const container = this.safeRun<Element>(() => {
+                return Array.from(sense.children).find((child) => {
+                    return child.classList.contains('sensetop');
+                });
+            });
+            if (container) {
+                // idiom.definition = this.safeRun<string>(() => idiomElement.querySelector('.def')?.textContent?.trim());
+                // idiom.disclaimer = this.safeRun<string>(() => idiomElement.querySelector('.dis-g')?.textContent?.trim());
+                senseTop.usage = this.safeRun<string>(() => container.querySelector('.use')?.textContent?.trim());
+                senseTop.labels = this.safeRun(() => this.getLabels(container, true));
+                senseTop.disclaimer = this.safeRun<string>(() => container.querySelector('.dis-g')?.textContent?.trim());
+                // idiom.examples = this.getSenseExamples(idiomElement);
+                senseTop.variants = this.safeRun(() => this.getVariants(container, true));
+            }
+        } catch (e) {
+            this.log(e);
+        }
+        return senseTop;
+    }
     private getPhrasalVerbEntries(dom: Document): PhrasalVerbEntry[] {
         let result: PhrasalVerbEntry[] = [];
         try {
@@ -429,6 +472,13 @@ class OALEnglishDictionary {
                 const phrasalVerbEntries = phrasalVerbEntriesRaw.map((phrasalVerbEntryElement) => {
                     const phrasalVerbEntry: PhrasalVerbEntry = {};
                     phrasalVerbEntry.spelling = this.safeRun(() => phrasalVerbEntryElement.querySelector('.webtop .pv')?.textContent?.trim());
+                    phrasalVerbEntry.usage = this.safeRun<string>(() => phrasalVerbEntryElement.querySelector('.top-container .webtop .use')?.textContent?.trim());
+                    phrasalVerbEntry.labels = this.safeRun(() => {
+                        return this.getLabels(phrasalVerbEntryElement.querySelector('.top-container .webtop') as Element, true);
+                    });
+                    phrasalVerbEntry.disclaimer = this.safeRun<string>(() => phrasalVerbEntryElement.querySelector('.top-container .webtop .dis-g')?.textContent?.trim());
+                    // phrasalVerbEntry.examples = this.getSenseExamples(phrasalVerbEntryElement);
+                    phrasalVerbEntry.variants = this.getVariants(phrasalVerbEntryElement, true);
                     phrasalVerbEntry.senses = this.safeRun(() => {
                         const container = phrasalVerbEntryElement.querySelector('ol') as Element;
                         const senses = this.getSenses(container, true);
@@ -529,6 +579,7 @@ class OALEnglishDictionary {
             const senses = sensesRaw.map((senseElement) => {
                 const sense: Sense = {};
                 sense.level = this.getLevel(senseElement, true);
+                sense.senseTop = this.getSenseTop(senseElement);
                 sense.variants = this.getVariants(senseElement, true);
                 sense.partOfSpeech = this.getPartOfSpeech(senseElement, true);
                 sense.disclaimer = this.safeRun<string>(() => senseElement.querySelector('.dis-g')?.textContent?.trim());
@@ -537,7 +588,11 @@ class OALEnglishDictionary {
                 sense.usage = this.safeRun<string>(() => senseElement.querySelector('.use')?.textContent?.trim());
                 sense.labels = this.getLabels(senseElement, true);
                 sense.grammar = this.safeRun<string>(() => senseElement.querySelector('.grammar')?.textContent?.trim());
-                sense.cf = this.safeRun<string>(() => senseElement.querySelector('.cf')?.textContent?.trim());
+                sense.cf = this.safeRun<string>(() => {
+                    return Array.from(senseElement.children).find((child) => {
+                        return child.classList.contains('cf');
+                    })?.textContent?.trim();
+                });
                 // get example
                 sense.examples = this.getSenseExamples(senseElement);
                 return sense;
@@ -744,7 +799,7 @@ class OALEnglishDictionary {
         try {
             let parent: Element;
             if (!parentElement) {
-                parent = dom.querySelector('.entry > .sense_single > sense .xrefs') as HTMLDivElement;
+                parent = dom.querySelector('.entry > .sense_single > .sense .xrefs') as HTMLDivElement;
             } else {
                 parent = Array.from(dom.children).find((child) =>
                         child.classList.contains('xrefs')
@@ -854,11 +909,19 @@ class OALEnglishDictionary {
         try {
             let parent: Element;
             if (!parentElement) {
-                parent = dom.querySelector('.webtop') as HTMLDivElement;
-                result = this.safeRun<string>(() => parent.querySelector('.labels')?.textContent?.trim());
+                parent = dom.querySelector('.entry .webtop') as HTMLDivElement;
+                result = this.safeRun<Element>(() => {
+                    return Array.from(parent.children).find((child) => {
+                        return child.classList.contains('labels');
+                    });
+                })?.textContent?.trim() || undefined;
             } else {
                 parent = dom as Element;
-                result = this.safeRun<string>(() => parent.querySelector('.labels')?.textContent?.trim());
+                result = this.safeRun<Element>(() => {
+                    return Array.from(parent.children).find((child) => {
+                        return child.classList.contains('labels');
+                    });
+                })?.textContent?.trim() || undefined;
             }
         } catch (e) {
             this.log(e);
@@ -895,40 +958,57 @@ class OALEnglishDictionary {
             }
         } catch (e) {
             this.log(e);
+            return '';
         }
         return result;
     }
     private async getHtmlByLink(link: string): Promise<string> {
-        await this.page.goto(`${this.linkBase}${link}`, { waitUntil: 'domcontentloaded' });
-        // Get the HTML content of the page
-        const searchResultsSelector = '.responsive_row';
-        await this.page.waitForSelector(searchResultsSelector);
-        const pageHTML = await this.page.content();
-        this.currentUrl = this.page.url();
-        // Return the HTML content as a string
-        return pageHTML;
+        try {
+            await this.page.goto(`${this.linkBase}${link}`, { waitUntil: 'domcontentloaded' });
+            // Get the HTML content of the page
+            const searchResultsSelector = '.responsive_row';
+            await this.page.waitForSelector(searchResultsSelector, { visible: true });
+            const pageHTML = await this.page.content();
+            this.currentUrl = this.page.url();
+            // Return the HTML content as a string
+            return pageHTML;
+        } catch (e) {
+            this.log(e);
+            return '';
+        }
     }
 
     private async getHtml(query: string): Promise<string> {
-        await this.page.goto(this.linkBase, { waitUntil: 'domcontentloaded' });
-        // await this.page.waitForNavigation({ waitUntil: 'networkidle0' })
-        const searchInputSelector = '#q';
-        const searchButtonSelector = '#search-btn input[type="submit"]'; // Modify selector for the button
-        await this.page.waitForSelector(searchInputSelector);
-        // Type the query into the search input field
-        await this.page.type(searchInputSelector, query);
-        // Click the search button
-        await this.page.click(searchButtonSelector);
-        await this.page.waitForNavigation({ waitUntil: 'domcontentloaded' });
-        // Wait for the search results to load (you may need to adjust the selector and wait time)
-        const searchResultsSelector = '.responsive_row';
-        await this.page.waitForSelector(searchResultsSelector);
-        // Get the HTML content of the page
-        const pageHTML = await this.page.content();
-        this.currentUrl = this.page.url();
+        try {
+            await this.page.goto(this.linkBase, { waitUntil: 'domcontentloaded' });
+            const searchInputSelector = '#q';
+            const searchButtonSelector = '#search-btn input[type="submit"]';
 
-        // Return the HTML content as a string
-        return pageHTML;
+            // Wait for the search input field to appear
+            await this.page.waitForSelector(searchInputSelector, { visible: true });
+
+            // Type the query into the search input field
+            await this.page.type(searchInputSelector, query);
+
+            // Click the search button
+            await this.page.click(searchButtonSelector);
+
+            // Wait for the search results to load (you may need to adjust the selector and wait time)
+            const searchResultsSelector = '.responsive_row';
+
+            // Wait for the search results selector to be visible
+            await this.page.waitForSelector(searchResultsSelector, { visible: true });
+
+            // Get the HTML content of the page
+            const pageHTML = await this.page.content();
+            this.currentUrl = this.page.url();
+
+            // Return the HTML content as a string
+            return pageHTML;
+        } catch (e) {
+            this.log(e);
+            throw new Error("Error Connecting");
+        }
     }
     private parseHTML(html: string): Document {
         const { window } = new JSDOM(html);
