@@ -6,5 +6,5 @@ import OALDic from "./oalenglish-dictionary/oalenglish-dictionary";
     const word = 'pants';
     const wordEntry = await OALDic().searchWordLink(link);
     // const wordEntry = await OALDic().searchWord(word);
-    console.log((wordEntry as any).phrasalVerbEntries);
+    console.log((wordEntry as any));
 })()

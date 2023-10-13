@@ -18,5 +18,5 @@ const oalenglish_dictionary_1 = __importDefault(require("./oalenglish-dictionary
     const word = 'pants';
     const wordEntry = yield (0, oalenglish_dictionary_1.default)().searchWordLink(link);
     // const wordEntry = await OALDic().searchWord(word);
-    console.log(wordEntry.phrasalVerbEntries);
+    console.log(wordEntry);
 }))();
