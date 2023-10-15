@@ -85,7 +85,6 @@ export declare class WordEntry {
     grammar?: string;
     variants?: Variant[];
     phonetics?: Phonetics;
-    definition?: string;
     referenceGroup?: ReferenceGroup;
     inflections?: Inflection[];
     verbForms?: VerbFormGroup[];
@@ -114,6 +113,7 @@ export declare class PhrasalVerb {
 declare class OALEnglishDictionary {
     constructor();
     private linkBase;
+    private searchLink;
     private browser;
     private currentUrl;
     private page;

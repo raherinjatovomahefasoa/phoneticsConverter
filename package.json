@@ -1,6 +1,6 @@
 {
   "name": "ewm-dico-engine",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "",
   "files": [
     "dist/gif-engine/gif-engine.js",

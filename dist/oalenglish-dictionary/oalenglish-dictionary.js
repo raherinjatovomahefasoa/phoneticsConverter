@@ -97,6 +97,7 @@ exports.PhrasalVerb = PhrasalVerb;
 class OALEnglishDictionary {
     constructor() {
         this.linkBase = 'https://www.oxfordlearnersdictionaries.com/definition/english/';
+        this.searchLink = 'https://www.oxfordlearnersdictionaries.com/search/english/?q=';
         this.logError = false;
         this.userDataDir = './puppeteer-data/oadl-engine';
         this.sanitizeFileName = (fileName) => {
@@ -118,28 +119,33 @@ class OALEnglishDictionary {
     }
     initialize() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.createUserDataDirectory();
-            this.browser = yield puppeteer_1.default.launch({
-                headless: 'new',
-                userDataDir: this.userDataDir,
-                args: ['--no-sandbox', '--disable-setuid-sandbox'],
-                devtools: false, // Disable DevTools
-            });
-            this.page = yield this.browser.newPage();
-            // Enable request interception
-            yield this.page.setRequestInterception(true);
-            // Intercept and block certain types of requests
-            this.page.on('request', (request) => {
-                if (request.resourceType() === 'image' || // Block image requests
-                    request.resourceType() === 'stylesheet' || // Block CSS requests
-                    request.resourceType() === 'media' || // Media resources include audio and video
-                    request.resourceType() === 'font') {
-                    request.abort();
-                }
-                else {
-                    request.continue();
-                }
-            });
+            try {
+                yield this.createUserDataDirectory();
+                this.browser = yield puppeteer_1.default.launch({
+                    headless: 'new',
+                    userDataDir: this.userDataDir,
+                    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+                    devtools: false, // Disable DevTools
+                });
+                this.page = yield this.browser.newPage();
+                // Enable request interception
+                yield this.page.setRequestInterception(true);
+                // Intercept and block certain types of requests
+                this.page.on('request', (request) => {
+                    if (request.resourceType() === 'image' || // Block image requests
+                        request.resourceType() === 'stylesheet' || // Block CSS requests
+                        request.resourceType() === 'media' || // Media resources include audio and video
+                        request.resourceType() === 'font') {
+                        request.abort();
+                    }
+                    else {
+                        request.continue();
+                    }
+                });
+            }
+            catch (e) {
+                this.log(e);
+            }
         });
     }
     searchWordLink(link) {
@@ -280,7 +286,6 @@ class OALEnglishDictionary {
         wordEntry.grammar = this.getGrammar(dom);
         wordEntry.variants = this.getVariants(dom);
         wordEntry.phonetics = this.getMainPhonetics(dom);
-        wordEntry.definition = this.getDefinition(dom);
         wordEntry.referenceGroup = this.getReferenceGroup(dom);
         wordEntry.inflections = this.getInflections(dom);
         wordEntry.verbForms = this.getVerbForms(dom);
@@ -321,9 +326,10 @@ class OALEnglishDictionary {
                     const inflection = {};
                     inflection.type = this.safeRun(() => { var _a; return (_a = elementGroup[0].textContent) === null || _a === void 0 ? void 0 : _a.replace(/[+(),]/g, '').trim(); });
                     inflection.spelling = this.safeRun(() => { var _a; return (_a = elementGroup[1].textContent) === null || _a === void 0 ? void 0 : _a.trim(); });
+                    const container = dom.querySelector('.inflections');
                     inflection.phonetics = {
-                        british: this.getRPPronunciation(dom, elementGroup[2]),
-                        northAmerican: this.getGAPronunciation(dom, elementGroup[2]),
+                        british: this.getRPPronunciation(dom, parent),
+                        northAmerican: this.getGAPronunciation(dom, parent),
                     };
                     return inflection;
                 });
@@ -484,12 +490,12 @@ class OALEnglishDictionary {
         return result;
     }
     getSensesAll(dom) {
-        let result = this.getSenseEntries(dom);
+        let result = this.getSenses(dom);
         if (result.length > 0) {
             return result;
         }
         else {
-            result = this.getSenses(dom);
+            result = this.getSenseEntries(dom);
             return result;
         }
     }
@@ -520,7 +526,7 @@ class OALEnglishDictionary {
             let parent;
             if (!parentElement) {
                 const bigParent = this.safeRun(() => dom.querySelector('.entry'));
-                parent = Array.from(bigParent.children).find((child) => child.classList.contains('senses_multiple'));
+                parent = Array.from(bigParent.children).find((child) => child.classList.contains('senses_multiple') || child.classList.contains('sense_single'));
             }
             else {
                 parent = dom;
@@ -948,20 +954,26 @@ class OALEnglishDictionary {
     getHtml(query) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                yield this.page.goto(this.linkBase, { waitUntil: 'domcontentloaded' });
-                const searchInputSelector = '#q';
-                const searchButtonSelector = '#search-btn input[type="submit"]';
-                // Wait for the search input field to appear
-                yield this.page.waitForSelector(searchInputSelector, { visible: true });
-                // Type the query into the search input field
-                yield this.page.type(searchInputSelector, query);
-                // Click the search button
-                yield this.page.click(searchButtonSelector);
-                // Wait for the search results to load (you may need to adjust the selector and wait time)
-                const searchResultsSelector = '.responsive_row';
-                // Wait for the search results selector to be visible
-                yield this.page.waitForSelector(searchResultsSelector, { visible: true });
+                // await this.page.goto(this.linkBase, { waitUntil: 'domcontentloaded' });
+                // const searchInputSelector = '#q';
+                // const searchButtonSelector = '#search-btn input[type="submit"]';
+                // // Wait for the search input field to appear
+                // await this.page.waitForSelector(searchInputSelector, { visible: true });
+                // // Type the query into the search input field
+                // await this.page.type(searchInputSelector, query);
+                // // Click the search button
+                // await this.page.click(searchButtonSelector);
+                // // Wait for the search results to load (you may need to adjust the selector and wait time)
+                // const searchResultsSelector = '.responsive_row';
+                // // Wait for the search results selector to be visible
+                // await this.page.waitForSelector(searchResultsSelector, { visible: true });
+                // // Get the HTML content of the page
+                // const pageHTML = await this.page.content();
+                // this.currentUrl = this.page.url();
+                yield this.page.goto(`${this.searchLink}${query}`, { waitUntil: 'domcontentloaded' });
                 // Get the HTML content of the page
+                const searchResultsSelector = '.responsive_row';
+                yield this.page.waitForSelector(searchResultsSelector, { visible: true });
                 const pageHTML = yield this.page.content();
                 this.currentUrl = this.page.url();
                 // Return the HTML content as a string
