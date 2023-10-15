@@ -24,31 +24,35 @@ class iStockEngine {
         }
     }
     private async initialize() {
-        await this.createUserDataDirectory();
-        this.browser = await puppeteer.launch({
-            headless: 'new', // Opt in to the new headless mode
-            userDataDir: this.userDataDir,
-            args: ['--no-sandbox', '--disable-setuid-sandbox'], // Use these flags for better compatibility
-            devtools: false, // Disable DevTools
-        });
-        this.page = await this.browser.newPage();
-        await this.page.setViewport({ width: 1280, height: 10000 });
-        // Enable request interception
-        await this.page.setRequestInterception(true);
+        try {
+            await this.createUserDataDirectory();
+            this.browser = await puppeteer.launch({
+                headless: 'new', // Opt in to the new headless mode
+                userDataDir: this.userDataDir,
+                args: ['--no-sandbox', '--disable-setuid-sandbox'], // Use these flags for better compatibility
+                devtools: false, // Disable DevTools
+            });
+            this.page = await this.browser.newPage();
+            await this.page.setViewport({ width: 1280, height: 10000 });
+            // Enable request interception
+            await this.page.setRequestInterception(true);
 
-            // Intercept and block certain types of requests
-            this.page.on('request', (request: any) => {
-            if (
-                request.resourceType() === 'image' || // Block image requests
-                request.resourceType() === 'stylesheet' || // Block CSS requests
-                request.resourceType() === 'media' || // Media resources include audio and video
-                request.resourceType() === 'font'
-            ) {
-                request.abort();
-            } else {
-                request.continue();
-            }
-        });
+                // Intercept and block certain types of requests
+                this.page.on('request', (request: any) => {
+                if (
+                    request.resourceType() === 'image' || // Block image requests
+                    request.resourceType() === 'stylesheet' || // Block CSS requests
+                    request.resourceType() === 'media' || // Media resources include audio and video
+                    request.resourceType() === 'font'
+                ) {
+                    request.abort();
+                } else {
+                    request.continue();
+                }
+            });
+        } catch (e) {
+            this.log(e);
+        }
     }
 
     async search(query: string) {
@@ -101,14 +105,18 @@ class iStockEngine {
     }
 
     private async getHtmlByLink(link: string): Promise<string> {
-        await this.page.goto(`${this.linkBase}${link}`, { waitUntil: 'domcontentloaded' });
-        // Get the HTML content of the page
-        const searchResultsSelector = '.DE6jTiCmOG8IPNVbM7pJ';
-        await this.page.waitForSelector(searchResultsSelector);
-        const pageHTML = await this.page.content();
-        this.currentUrl = this.page.url();
-        // Return the HTML content as a string
-        return pageHTML;
+        try {
+            await this.page.goto(`${this.linkBase}${link}`, { waitUntil: 'domcontentloaded' });
+            // Get the HTML content of the page
+            const searchResultsSelector = '.DE6jTiCmOG8IPNVbM7pJ';
+            await this.page.waitForSelector(searchResultsSelector);
+            const pageHTML = await this.page.content();
+            this.currentUrl = this.page.url();
+            // Return the HTML content as a string
+            return pageHTML;
+        } catch (e) {
+            return '';
+        }
     }
     private async close() {
         if (this.browser) {

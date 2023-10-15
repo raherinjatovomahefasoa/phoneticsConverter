@@ -5,6 +5,7 @@ import PhonEngine from '../phonetics-engine/phonetics-engine';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import * as path from 'path';
+import * as querystring from 'querystring';
 
 export class Pronunciation {
     phonetics?: string;
@@ -1010,8 +1011,8 @@ class OALEnglishDictionary {
             // const pageHTML = await this.page.content();
             // this.currentUrl = this.page.url();
 
-            await this.page.goto(`${this.searchLink}${query}`, { waitUntil: 'domcontentloaded' });
-            // Get the HTML content of the page
+            await this.page.goto(`${this.searchLink}${this.stringToLinkType(query)}`, { waitUntil: 'domcontentloaded' });
+            // Get the HTML content of the page(
             const searchResultsSelector = '.responsive_row';
             await this.page.waitForSelector(searchResultsSelector, { visible: true });
             const pageHTML = await this.page.content();
@@ -1037,6 +1038,12 @@ class OALEnglishDictionary {
         if (this.browser) {
             await this.browser.close();
         }
+    }
+    private stringToLinkType(inputString: string): string {
+        return this.safeRun<string>(() => {
+            const encodedString = querystring.escape(inputString);
+            return encodedString;
+        }) || inputString;
     }
 }
 

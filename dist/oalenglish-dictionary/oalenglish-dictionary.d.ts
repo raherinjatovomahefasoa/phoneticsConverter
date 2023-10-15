@@ -162,6 +162,7 @@ declare class OALEnglishDictionary {
     private parseHTML;
     private log;
     private close;
+    private stringToLinkType;
 }
 export default function OALDic(): OALEnglishDictionary;
 export {};

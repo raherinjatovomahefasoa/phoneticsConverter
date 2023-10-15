@@ -12,11 +12,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const oalenglish_dictionary_1 = __importDefault(require("./oalenglish-dictionary/oalenglish-dictionary"));
+const image_engine_1 = __importDefault(require("./image-engine/image-engine"));
 (() => __awaiter(void 0, void 0, void 0, function* () {
     const link = 'good_1';
-    const word = 'henry';
+    const word = `women`;
     // const wordEntry = await OALDic().searchWordLink(link);
-    const wordEntry = yield (0, oalenglish_dictionary_1.default)().searchWord(word);
+    // const wordEntry = await OALDic().searchWord(word);
+    const wordEntry = yield (0, image_engine_1.default)().search(word);
+    // const wordEntry = await GifImages().search(word);
     console.log(wordEntry);
 }))();

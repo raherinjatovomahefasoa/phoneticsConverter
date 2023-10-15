@@ -39,29 +39,34 @@ class iStockEngine {
     }
     initialize() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.createUserDataDirectory();
-            this.browser = yield puppeteer_1.default.launch({
-                headless: 'new',
-                userDataDir: this.userDataDir,
-                args: ['--no-sandbox', '--disable-setuid-sandbox'],
-                devtools: false, // Disable DevTools
-            });
-            this.page = yield this.browser.newPage();
-            yield this.page.setViewport({ width: 1280, height: 10000 });
-            // Enable request interception
-            yield this.page.setRequestInterception(true);
-            // Intercept and block certain types of requests
-            this.page.on('request', (request) => {
-                if (request.resourceType() === 'image' || // Block image requests
-                    request.resourceType() === 'stylesheet' || // Block CSS requests
-                    request.resourceType() === 'media' || // Media resources include audio and video
-                    request.resourceType() === 'font') {
-                    request.abort();
-                }
-                else {
-                    request.continue();
-                }
-            });
+            try {
+                yield this.createUserDataDirectory();
+                this.browser = yield puppeteer_1.default.launch({
+                    headless: 'new',
+                    userDataDir: this.userDataDir,
+                    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+                    devtools: false, // Disable DevTools
+                });
+                this.page = yield this.browser.newPage();
+                yield this.page.setViewport({ width: 1280, height: 10000 });
+                // Enable request interception
+                yield this.page.setRequestInterception(true);
+                // Intercept and block certain types of requests
+                this.page.on('request', (request) => {
+                    if (request.resourceType() === 'image' || // Block image requests
+                        request.resourceType() === 'stylesheet' || // Block CSS requests
+                        request.resourceType() === 'media' || // Media resources include audio and video
+                        request.resourceType() === 'font') {
+                        request.abort();
+                    }
+                    else {
+                        request.continue();
+                    }
+                });
+            }
+            catch (e) {
+                this.log(e);
+            }
         });
     }
     search(query) {
@@ -114,14 +119,19 @@ class iStockEngine {
     }
     getHtmlByLink(link) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.page.goto(`${this.linkBase}${link}`, { waitUntil: 'domcontentloaded' });
-            // Get the HTML content of the page
-            const searchResultsSelector = '.DE6jTiCmOG8IPNVbM7pJ';
-            yield this.page.waitForSelector(searchResultsSelector);
-            const pageHTML = yield this.page.content();
-            this.currentUrl = this.page.url();
-            // Return the HTML content as a string
-            return pageHTML;
+            try {
+                yield this.page.goto(`${this.linkBase}${link}`, { waitUntil: 'domcontentloaded' });
+                // Get the HTML content of the page
+                const searchResultsSelector = '.DE6jTiCmOG8IPNVbM7pJ';
+                yield this.page.waitForSelector(searchResultsSelector);
+                const pageHTML = yield this.page.content();
+                this.currentUrl = this.page.url();
+                // Return the HTML content as a string
+                return pageHTML;
+            }
+            catch (e) {
+                return '';
+            }
         });
     }
     close() {

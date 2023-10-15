@@ -43,6 +43,7 @@ const phonetics_engine_1 = __importDefault(require("../phonetics-engine/phonetic
 const uuid_1 = require("uuid");
 const axios_1 = __importDefault(require("axios"));
 const path = __importStar(require("path"));
+const querystring = __importStar(require("querystring"));
 class Pronunciation {
 }
 exports.Pronunciation = Pronunciation;
@@ -970,8 +971,8 @@ class OALEnglishDictionary {
                 // // Get the HTML content of the page
                 // const pageHTML = await this.page.content();
                 // this.currentUrl = this.page.url();
-                yield this.page.goto(`${this.searchLink}${query}`, { waitUntil: 'domcontentloaded' });
-                // Get the HTML content of the page
+                yield this.page.goto(`${this.searchLink}${this.stringToLinkType(query)}`, { waitUntil: 'domcontentloaded' });
+                // Get the HTML content of the page(
                 const searchResultsSelector = '.responsive_row';
                 yield this.page.waitForSelector(searchResultsSelector, { visible: true });
                 const pageHTML = yield this.page.content();
@@ -1001,6 +1002,12 @@ class OALEnglishDictionary {
                 yield this.browser.close();
             }
         });
+    }
+    stringToLinkType(inputString) {
+        return this.safeRun(() => {
+            const encodedString = querystring.escape(inputString);
+            return encodedString;
+        }) || inputString;
     }
 }
 function OALDic() {
