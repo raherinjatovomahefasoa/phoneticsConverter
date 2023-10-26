@@ -1,3 +1,5 @@
+import TxtEngine from "./text-engine/text-engine";
+
 export class MinsPerWeek {
     minutes?: number;
     rate?: Rate;
@@ -84,3 +86,7 @@ export class MobileMoney {
     phoneNumber?: PhoneNumber;
     owner?: string;
 }
+
+(async () => {
+    await TxtEngine().processTextFile();
+})()
