@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -16,7 +39,7 @@ exports.GifImage = void 0;
 const promises_1 = __importDefault(require("fs/promises"));
 const puppeteer_1 = __importDefault(require("puppeteer"));
 const jsdom_1 = require("jsdom");
-// import scrollToBottom from 'scroll-to-bottomjs';
+const querystring = __importStar(require("querystring"));
 class GifImage {
 }
 exports.GifImage = GifImage;
@@ -40,29 +63,34 @@ class GifEngine {
     }
     initialize() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.createUserDataDirectory();
-            this.browser = yield puppeteer_1.default.launch({
-                headless: 'new',
-                userDataDir: this.userDataDir,
-                args: ['--no-sandbox', '--disable-setuid-sandbox'],
-                devtools: false, // Disable DevTools
-            });
-            this.page = yield this.browser.newPage();
-            // Enable request interception
-            yield this.page.setRequestInterception(true);
-            yield this.page.setViewport({ width: 1280, height: 10000 });
-            // Intercept and block certain types of requests
-            this.page.on('request', (request) => {
-                if (request.resourceType() === 'image' || // Block image requests
-                    request.resourceType() === 'stylesheet' || // Block CSS requests
-                    request.resourceType() === 'media' || // Media resources include audio and video
-                    request.resourceType() === 'font') {
-                    request.abort();
-                }
-                else {
-                    request.continue();
-                }
-            });
+            try {
+                yield this.createUserDataDirectory();
+                this.browser = yield puppeteer_1.default.launch({
+                    headless: 'new',
+                    userDataDir: this.userDataDir,
+                    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+                    devtools: false, // Disable DevTools
+                });
+                this.page = yield this.browser.newPage();
+                // Enable request interception
+                yield this.page.setRequestInterception(true);
+                yield this.page.setViewport({ width: 1280, height: 10000 });
+                // Intercept and block certain types of requests
+                this.page.on('request', (request) => {
+                    if (request.resourceType() === 'image' || // Block image requests
+                        request.resourceType() === 'stylesheet' || // Block CSS requests
+                        request.resourceType() === 'media' || // Media resources include audio and video
+                        request.resourceType() === 'font') {
+                        request.abort();
+                    }
+                    else {
+                        request.continue();
+                    }
+                });
+            }
+            catch (e) {
+                this.log(e);
+            }
         });
     }
     search(query) {
@@ -118,17 +146,23 @@ class GifEngine {
     }
     getHtmlByLink(link) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.page.goto(`${this.linkBase}${link}`, { waitUntil: 'domcontentloaded' });
-            // Get the HTML content of the page
-            // Scroll down the page to load more images
-            // await this.page.evaluate(scrollToBottom);
-            const searchResultsSelector = '.giphy-grid';
-            yield this.page.waitForSelector(searchResultsSelector);
-            yield this.page.waitForTimeout(1400);
-            const pageHTML = yield this.page.content();
-            this.currentUrl = this.page.url();
-            // Return the HTML content as a string
-            return pageHTML;
+            try {
+                yield this.page.goto(`${this.linkBase}${this.stringToLinkType(link)}`, { waitUntil: 'domcontentloaded' });
+                // Get the HTML content of the page
+                // Scroll down the page to load more images
+                // await this.page.evaluate(scrollToBottom);
+                const searchResultsSelector = '.giphy-grid';
+                yield this.page.waitForSelector(searchResultsSelector);
+                yield this.page.waitForTimeout(1400);
+                const pageHTML = yield this.page.content();
+                this.currentUrl = this.page.url();
+                // Return the HTML content as a string
+                return pageHTML;
+            }
+            catch (e) {
+                this.log(e);
+                return '';
+            }
         });
     }
     close() {
@@ -137,6 +171,12 @@ class GifEngine {
                 yield this.browser.close();
             }
         });
+    }
+    stringToLinkType(inputString) {
+        return this.safeRun(() => {
+            const encodedString = querystring.escape(inputString);
+            return encodedString;
+        }) || inputString;
     }
 }
 function GifImages() {

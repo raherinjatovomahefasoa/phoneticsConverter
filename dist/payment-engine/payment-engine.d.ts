@@ -1,31 +1,27 @@
-export class MinsPerWeek {
+export declare class MinsPerWeek {
     minutes?: number;
     rate?: Rate;
     discount?: number;
 }
 export type Day = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
-export class Time {
+export declare class Time {
     hours?: number;
     minutes?: number;
-};
-
-export class Schedule {
+}
+export declare class Schedule {
     day?: Day;
     time?: Time;
 }
-
-export class MonthlyCourse {
+export declare class MonthlyCourse {
     minsPerWeek?: MinsPerWeek;
     schedules?: Schedule[];
     startDate?: Date;
 }
-
-export class Rate {
+export declare class Rate {
     amount?: number;
     minutes?: number;
 }
-
-export class Purchase {
+export declare class Purchase {
     monthlyCourse?: MonthlyCourse;
     studentUniqueId?: string;
     amount?: number;
@@ -34,52 +30,43 @@ export class Purchase {
     person?: Person;
     date?: Date;
 }
-
-export class Student {
+export declare class Student {
     firstName?: string;
     lastName?: string;
     facebookAccount?: string;
     ankiLogin?: AnkiLogin;
     sessions?: Session[];
 }
-
-export class Session {
+export declare class Session {
     start?: Date;
     end?: Date;
     lessons?: number[];
 }
-
-export class AnkiLogin {
+export declare class AnkiLogin {
     mail?: string;
     password?: string;
 }
-
-export class Person {
+export declare class Person {
     firstName?: string;
     lastName?: string;
     facebookAccount?: string;
     mail?: string;
     phoneNumber?: PhoneNumber;
 }
-
-export class PhoneNumber {
+export declare class PhoneNumber {
     code?: string;
     number?: number;
 }
-
-export class Cash {
+export declare class Cash {
     notes?: NoteGroup[];
     change?: number;
 }
-
-export class NoteGroup {
+export declare class NoteGroup {
     note?: Note;
     number?: number;
 }
-
 export type Note = 100 | 200 | 500 | 1000 | 2000 | 5000 | 10000 | 20000;
-
-export class MobileMoney {
+export declare class MobileMoney {
     operator?: string;
     phoneNumber?: PhoneNumber;
     owner?: string;

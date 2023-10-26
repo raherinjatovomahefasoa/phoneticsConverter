@@ -35,7 +35,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Reference = exports.ReferenceGroup = exports.Definition = exports.NearbyWord = exports.WordEntry = exports.Phonetics = exports.SenseExample = exports.SenseEntry = exports.Sense = exports.Inflection = exports.VerbForm = exports.Variant = exports.Idiom = exports.Pronunciation = void 0;
+exports.PhrasalVerb = exports.Reference = exports.ReferenceGroup = exports.NearbyWord = exports.WordEntry = exports.Phonetics = exports.SentenceExample = exports.SenseExample = exports.SenseEntry = exports.SenseTop = exports.Idiom = exports.PhrasalVerbEntry = exports.Sense = exports.Inflection = exports.VerbForm = exports.Variant = exports.Pronunciation = void 0;
 const promises_1 = __importDefault(require("fs/promises"));
 const puppeteer_1 = __importDefault(require("puppeteer"));
 const jsdom_1 = require("jsdom");
@@ -43,12 +43,10 @@ const phonetics_engine_1 = __importDefault(require("../phonetics-engine/phonetic
 const uuid_1 = require("uuid");
 const axios_1 = __importDefault(require("axios"));
 const path = __importStar(require("path"));
+const querystring = __importStar(require("querystring"));
 class Pronunciation {
 }
 exports.Pronunciation = Pronunciation;
-class Idiom {
-}
-exports.Idiom = Idiom;
 class Variant {
 }
 exports.Variant = Variant;
@@ -61,12 +59,24 @@ exports.Inflection = Inflection;
 class Sense {
 }
 exports.Sense = Sense;
+class PhrasalVerbEntry {
+}
+exports.PhrasalVerbEntry = PhrasalVerbEntry;
+class Idiom {
+}
+exports.Idiom = Idiom;
+class SenseTop {
+}
+exports.SenseTop = SenseTop;
 class SenseEntry {
 }
 exports.SenseEntry = SenseEntry;
 class SenseExample {
 }
 exports.SenseExample = SenseExample;
+class SentenceExample {
+}
+exports.SentenceExample = SentenceExample;
 class Phonetics {
 }
 exports.Phonetics = Phonetics;
@@ -76,18 +86,19 @@ exports.WordEntry = WordEntry;
 class NearbyWord {
 }
 exports.NearbyWord = NearbyWord;
-class Definition {
-}
-exports.Definition = Definition;
 class ReferenceGroup {
 }
 exports.ReferenceGroup = ReferenceGroup;
 class Reference {
 }
 exports.Reference = Reference;
+class PhrasalVerb {
+}
+exports.PhrasalVerb = PhrasalVerb;
 class OALEnglishDictionary {
     constructor() {
         this.linkBase = 'https://www.oxfordlearnersdictionaries.com/definition/english/';
+        this.searchLink = 'https://www.oxfordlearnersdictionaries.com/search/english/?q=';
         this.logError = false;
         this.userDataDir = './puppeteer-data/oadl-engine';
         this.sanitizeFileName = (fileName) => {
@@ -109,29 +120,33 @@ class OALEnglishDictionary {
     }
     initialize() {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('start');
-            yield this.createUserDataDirectory();
-            this.browser = yield puppeteer_1.default.launch({
-                headless: 'new',
-                userDataDir: this.userDataDir,
-                args: ['--no-sandbox', '--disable-setuid-sandbox'],
-                devtools: false, // Disable DevTools
-            });
-            this.page = yield this.browser.newPage();
-            // Enable request interception
-            yield this.page.setRequestInterception(true);
-            // Intercept and block certain types of requests
-            this.page.on('request', (request) => {
-                if (request.resourceType() === 'image' || // Block image requests
-                    request.resourceType() === 'stylesheet' || // Block CSS requests
-                    request.resourceType() === 'media' || // Media resources include audio and video
-                    request.resourceType() === 'font') {
-                    request.abort();
-                }
-                else {
-                    request.continue();
-                }
-            });
+            try {
+                yield this.createUserDataDirectory();
+                this.browser = yield puppeteer_1.default.launch({
+                    headless: 'new',
+                    userDataDir: this.userDataDir,
+                    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+                    devtools: false, // Disable DevTools
+                });
+                this.page = yield this.browser.newPage();
+                // Enable request interception
+                yield this.page.setRequestInterception(true);
+                // Intercept and block certain types of requests
+                this.page.on('request', (request) => {
+                    if (request.resourceType() === 'image' || // Block image requests
+                        request.resourceType() === 'stylesheet' || // Block CSS requests
+                        request.resourceType() === 'media' || // Media resources include audio and video
+                        request.resourceType() === 'font') {
+                        request.abort();
+                    }
+                    else {
+                        request.continue();
+                    }
+                });
+            }
+            catch (e) {
+                this.log(e);
+            }
         });
     }
     searchWordLink(link) {
@@ -143,7 +158,7 @@ class OALEnglishDictionary {
             return this.scrape(htmlContent);
         });
     }
-    saveSounds(obj, spelling) {
+    saveSounds(dir, dataDir, obj, spelling) {
         return __awaiter(this, void 0, void 0, function* () {
             // Base case: if obj is not an object, return it as is
             if (typeof obj !== 'object' || obj === null) {
@@ -155,12 +170,12 @@ class OALEnglishDictionary {
             for (const key in obj) {
                 if (obj.hasOwnProperty(key)) {
                     // Recursively call modifySoundKey for nested objects
-                    modifiedObj[key] = yield this.saveSounds(obj[key], title);
+                    modifiedObj[key] = yield this.saveSounds(dir, dataDir, obj[key], title);
                     // Check if the key is 'sound', and if so, run the callback function
                     if (key === 'sound') {
                         if (obj[key]) {
                             yield this.safeRun(() => __awaiter(this, void 0, void 0, function* () {
-                                modifiedObj[key] = yield this.downloadAndSaveMp3(obj[key], title);
+                                modifiedObj[key] = yield this.downloadAndSaveMp3(dir, dataDir, obj[key], title);
                             }));
                         }
                     }
@@ -169,7 +184,7 @@ class OALEnglishDictionary {
             return modifiedObj;
         });
     }
-    downloadAndSaveMp3(url, name) {
+    downloadAndSaveMp3(dir, dataDir, url, name) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 // Use Axios to download the MP3 file
@@ -182,11 +197,21 @@ class OALEnglishDictionary {
                 title = this.sanitizeFileName(title);
                 const newFileName = `${title}_${uniqueString}${fileExtension}`;
                 // Save the downloaded file to the 'uploads' directory
-                const filePath = path.join(__dirname, '../../uploads', newFileName);
+                try {
+                    // Use fs.access to check if the directory exists
+                    yield promises_1.default.access(dataDir);
+                }
+                catch (error) {
+                    // If it doesn't exist, create it
+                    yield promises_1.default.mkdir(dataDir, { recursive: true });
+                }
+                const filePath = path.join(dir, dataDir, newFileName);
                 yield promises_1.default.writeFile(filePath, response.data);
                 return newFileName;
             }
-            catch (error) {
+            catch (e) {
+                this.log(e);
+                console.error(e);
                 return url;
             }
         });
@@ -264,16 +289,21 @@ class OALEnglishDictionary {
         const wordEntry = {};
         wordEntry.link = this.getLink(this.currentUrl);
         wordEntry.spelling = this.getWord(dom);
+        wordEntry.labels = this.getLabels(dom);
+        wordEntry.disclaimer = this.getDisclaimer(dom);
+        wordEntry.usage = this.getUsage(dom);
         wordEntry.partOfSpeech = this.getPartOfSpeech(dom);
         wordEntry.level = this.getLevel(dom);
         wordEntry.grammar = this.getGrammar(dom);
         wordEntry.variants = this.getVariants(dom);
         wordEntry.phonetics = this.getMainPhonetics(dom);
-        wordEntry.definition = this.getDefinition(dom);
+        wordEntry.referenceGroup = this.getReferenceGroup(dom);
         wordEntry.inflections = this.getInflections(dom);
         wordEntry.verbForms = this.getVerbForms(dom);
+        wordEntry.phrasalVerbEntries = this.getPhrasalVerbEntries(dom);
         wordEntry.senses = this.getSensesAll(dom);
         wordEntry.idioms = this.getIdioms(dom);
+        wordEntry.phrasalVerbs = this.getPhrasalVerbs(dom);
         wordEntry.nearbyWords = this.getNearbyWords(dom);
         wordEntry.resultList = this.getResultItems(dom);
         return wordEntry;
@@ -307,13 +337,45 @@ class OALEnglishDictionary {
                     const inflection = {};
                     inflection.type = this.safeRun(() => { var _a; return (_a = elementGroup[0].textContent) === null || _a === void 0 ? void 0 : _a.replace(/[+(),]/g, '').trim(); });
                     inflection.spelling = this.safeRun(() => { var _a; return (_a = elementGroup[1].textContent) === null || _a === void 0 ? void 0 : _a.trim(); });
-                    inflection.phonetics = {
-                        british: this.getRPPronunciation(dom, elementGroup[2]),
-                        northAmerican: this.getGAPronunciation(dom, elementGroup[2]),
-                    };
+                    const container = dom.querySelector('.inflections');
+                    // get PHonetics
+                    for (const child of elementGroup) {
+                        try {
+                            if (child.classList.contains('phonetics')) {
+                                inflection.phonetics = {
+                                    british: this.getRPPronunciation(dom, child),
+                                    northAmerican: this.getGAPronunciation(dom, child),
+                                };
+                            }
+                            ;
+                        }
+                        catch (e) { }
+                    }
                     return inflection;
                 });
                 result = inflections;
+            }
+        }
+        catch (e) {
+            this.log(e);
+        }
+        return result;
+    }
+    getPhrasalVerbs(dom) {
+        let result = [];
+        try {
+            const container = this.safeRun(() => dom.querySelector('.phrasal_verb_links .pvrefs'));
+            if (container) {
+                const phrasalVerbsRaw = Array.from(container.querySelectorAll('.li'));
+                const phrasalVerbs = phrasalVerbsRaw.map((phrasalVerbElment) => {
+                    const refElement = this.safeRun(() => phrasalVerbElment.querySelector('.Ref'));
+                    const phrasalVerb = {};
+                    if (refElement) {
+                        phrasalVerb.reference = this.getReference(refElement, true);
+                    }
+                    return phrasalVerb;
+                });
+                result = phrasalVerbs;
             }
         }
         catch (e) {
@@ -329,11 +391,24 @@ class OALEnglishDictionary {
                 const idiomsRaw = Array.from(container.querySelectorAll('.idm-g'));
                 const idioms = idiomsRaw.map((idiomElement) => {
                     const idiom = {};
-                    idiom.idiom = this.safeRun(() => { var _a, _b; return (_b = (_a = idiomElement.querySelector('.top-container')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
-                    idiom.definiton = this.safeRun(() => { var _a, _b; return (_b = (_a = idiomElement.querySelector('.def')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
-                    idiom.usage = this.safeRun(() => { var _a, _b; return (_b = (_a = idiomElement.querySelector('.use')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
-                    idiom.labels = this.safeRun(() => { var _a, _b; return (_b = (_a = idiomElement.querySelector('.labels')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
-                    idiom.examples = this.getSenseExamples(idiomElement);
+                    idiom.idiom = this.safeRun(() => { var _a, _b; return (_b = (_a = idiomElement.querySelector('.top-container .webtop .idm')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+                    // idiom.definition = this.safeRun<string>(() => idiomElement.querySelector('.def')?.textContent?.trim());
+                    // idiom.disclaimer = this.safeRun<string>(() => idiomElement.querySelector('.dis-g')?.textContent?.trim());
+                    idiom.usage = this.safeRun(() => { var _a, _b; return (_b = (_a = idiomElement.querySelector('.top-container .webtop .use')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+                    idiom.labels = this.safeRun(() => {
+                        return this.getLabels(idiomElement.querySelector('.top-container .webtop'), true);
+                    });
+                    idiom.disclaimer = this.safeRun(() => { var _a, _b; return (_b = (_a = idiomElement.querySelector('.top-container .webtop .dis-g')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+                    // idiom.examples = this.getSenseExamples(idiomElement);
+                    idiom.variants = this.getVariants(idiomElement, true);
+                    idiom.senses = this.safeRun(() => {
+                        const container = idiomElement.querySelector('ol');
+                        return this.getSenses(container, true);
+                    });
+                    // idiom.referenceGroup = this.getReferenceGroup(idiomElement, true);
+                    // idiom.grammar = this.getGrammar(idiomElement, true);
+                    // idiom.partOfSpeech = this.getPartOfSpeech(idiomElement, true);
+                    // idiom.cf = this.safeRun<string>(() => idiomElement.querySelector('.cf')?.textContent?.trim());
                     return idiom;
                 });
                 result = idioms;
@@ -344,6 +419,75 @@ class OALEnglishDictionary {
         }
         return result;
     }
+    getSenseTop(sense) {
+        let senseTop = {};
+        try {
+            const container = this.safeRun(() => {
+                return Array.from(sense.children).find((child) => {
+                    return child.classList.contains('sensetop');
+                });
+            });
+            if (container) {
+                // idiom.definition = this.safeRun<string>(() => idiomElement.querySelector('.def')?.textContent?.trim());
+                // idiom.disclaimer = this.safeRun<string>(() => idiomElement.querySelector('.dis-g')?.textContent?.trim());
+                senseTop.usage = this.safeRun(() => { var _a, _b; return (_b = (_a = container.querySelector('.use')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+                senseTop.labels = this.safeRun(() => this.getLabels(container, true));
+                senseTop.disclaimer = this.safeRun(() => { var _a, _b; return (_b = (_a = container.querySelector('.dis-g')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+                // idiom.examples = this.getSenseExamples(idiomElement);
+                senseTop.variants = this.safeRun(() => this.getVariants(container, true));
+            }
+        }
+        catch (e) {
+            this.log(e);
+        }
+        return senseTop;
+    }
+    getPhrasalVerbEntries(dom) {
+        let result = [];
+        try {
+            const container = this.safeRun(() => dom.querySelector('.entry'));
+            if (container) {
+                const phrasalVerbEntriesRaw = Array.from(container.children).filter((child) => child.classList.contains('pv-g'));
+                const phrasalVerbEntries = phrasalVerbEntriesRaw.map((phrasalVerbEntryElement) => {
+                    const phrasalVerbEntry = {};
+                    phrasalVerbEntry.spelling = this.safeRun(() => { var _a, _b; return (_b = (_a = phrasalVerbEntryElement.querySelector('.webtop .pv')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+                    phrasalVerbEntry.usage = this.safeRun(() => { var _a, _b; return (_b = (_a = phrasalVerbEntryElement.querySelector('.top-container .webtop .use')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+                    phrasalVerbEntry.labels = this.safeRun(() => {
+                        return this.getLabels(phrasalVerbEntryElement.querySelector('.top-container .webtop'), true);
+                    });
+                    phrasalVerbEntry.disclaimer = this.safeRun(() => { var _a, _b; return (_b = (_a = phrasalVerbEntryElement.querySelector('.top-container .webtop .dis-g')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+                    // phrasalVerbEntry.examples = this.getSenseExamples(phrasalVerbEntryElement);
+                    phrasalVerbEntry.variants = this.getVariants(phrasalVerbEntryElement, true);
+                    phrasalVerbEntry.senses = this.safeRun(() => {
+                        const container = phrasalVerbEntryElement.querySelector('ol');
+                        const senses = this.getSenses(container, true);
+                        return senses;
+                    });
+                    return phrasalVerbEntry;
+                });
+                result = phrasalVerbEntries;
+            }
+        }
+        catch (e) {
+            this.log(e);
+        }
+        return result;
+    }
+    getSentenceExample(senteceElement) {
+        let sentenceExample = {};
+        try {
+            const container = senteceElement;
+            if (container) {
+                sentenceExample.sentence = this.safeRun(() => { var _a, _b; return (_b = (_a = container.querySelector('.x')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+                sentenceExample.gloss = this.safeRun(() => { var _a, _b; return (_b = (_a = container.querySelector('.x .gloss')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+                sentenceExample.highlight = this.safeRun(() => { var _a, _b; return (_b = (_a = container.querySelector('.x .cl')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+            }
+        }
+        catch (e) {
+            this.log(e);
+        }
+        return sentenceExample;
+    }
     getSenseExamples(senseElement) {
         let result = [];
         try {
@@ -352,9 +496,9 @@ class OALEnglishDictionary {
                 const examplesRaw = Array.from(container.children);
                 const examples = examplesRaw.map((exampleElement) => {
                     const example = {};
+                    example.labels = this.safeRun(() => { var _a, _b; return (_b = (_a = exampleElement.querySelector('.labels')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
                     example.cf = this.safeRun(() => { var _a, _b; return (_b = (_a = exampleElement.querySelector('.cf')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
-                    example.example = this.safeRun(() => { var _a, _b; return (_b = (_a = exampleElement.querySelector('.x')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
-                    example.highlight = this.safeRun(() => { var _a, _b; return (_b = (_a = exampleElement.querySelector('.cl')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+                    example.sentence = this.getSentenceExample(exampleElement);
                     return example;
                 });
                 result = examples;
@@ -366,27 +510,30 @@ class OALEnglishDictionary {
         return result;
     }
     getSensesAll(dom) {
-        let result = this.getSenseEntries(dom);
+        let result = this.getSenses(dom);
         if (result.length > 0) {
             return result;
         }
         else {
-            result = this.getSenses(dom);
+            result = this.getSenseEntries(dom);
             return result;
         }
     }
     getSenseEntries(dom) {
         let result = [];
         try {
-            const parent = dom.querySelector('.senses_multiple');
-            const senseEntriesRaw = Array.from(parent.children).filter((child) => child.tagName === 'SPAN');
-            const senseEntries = senseEntriesRaw.map((senseEntryElement) => {
-                const senseEntry = {};
-                senseEntry.meaning = this.safeRun(() => { var _a, _b; return (_b = (_a = senseEntryElement.querySelector('.shcut')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
-                senseEntry.senses = this.getSenses(senseEntryElement, true);
-                return senseEntry;
-            });
-            result = senseEntries;
+            const bigParent = this.safeRun(() => dom.querySelector('.entry'));
+            if (bigParent) {
+                const parent = Array.from(bigParent.children).find((child) => child.classList.contains('senses_multiple'));
+                const senseEntriesRaw = Array.from(parent.children).filter((child) => child.tagName === 'SPAN');
+                const senseEntries = senseEntriesRaw.map((senseEntryElement) => {
+                    const senseEntry = {};
+                    senseEntry.meaning = this.safeRun(() => { var _a, _b; return (_b = (_a = senseEntryElement.querySelector('.shcut')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+                    senseEntry.senses = this.getSenses(senseEntryElement, true);
+                    return senseEntry;
+                });
+                result = senseEntries;
+            }
         }
         catch (e) {
             this.log(e);
@@ -398,7 +545,8 @@ class OALEnglishDictionary {
         try {
             let parent;
             if (!parentElement) {
-                parent = dom.querySelector('.senses_multiple');
+                const bigParent = this.safeRun(() => dom.querySelector('.entry'));
+                parent = Array.from(bigParent.children).find((child) => child.classList.contains('senses_multiple') || child.classList.contains('sense_single'));
             }
             else {
                 parent = dom;
@@ -407,11 +555,21 @@ class OALEnglishDictionary {
             const senses = sensesRaw.map((senseElement) => {
                 const sense = {};
                 sense.level = this.getLevel(senseElement, true);
+                sense.senseTop = this.getSenseTop(senseElement);
                 sense.variants = this.getVariants(senseElement, true);
                 sense.partOfSpeech = this.getPartOfSpeech(senseElement, true);
+                sense.disclaimer = this.safeRun(() => { var _a, _b; return (_b = (_a = senseElement.querySelector('.dis-g')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
                 sense.definition = this.safeRun(() => { var _a, _b; return (_b = (_a = senseElement.querySelector('.def')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+                sense.referenceGroup = this.getReferenceGroup(senseElement, true);
+                sense.usage = this.safeRun(() => { var _a, _b; return (_b = (_a = senseElement.querySelector('.use')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+                sense.labels = this.getLabels(senseElement, true);
                 sense.grammar = this.safeRun(() => { var _a, _b; return (_b = (_a = senseElement.querySelector('.grammar')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
-                sense.cf = this.safeRun(() => { var _a, _b; return (_b = (_a = senseElement.querySelector('.cf')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+                sense.cf = this.safeRun(() => {
+                    var _a, _b;
+                    return (_b = (_a = Array.from(senseElement.children).find((child) => {
+                        return child.classList.contains('cf');
+                    })) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim();
+                });
                 // get example
                 sense.examples = this.getSenseExamples(senseElement);
                 return sense;
@@ -593,36 +751,47 @@ class OALEnglishDictionary {
         return result;
     }
     getDefinition(dom, parentElement = false) {
-        let definition = {};
+        var _a, _b;
+        let definition;
         try {
             let parent;
             if (!parentElement) {
                 const testParent = this.safeRun(() => dom.querySelector('.entry'));
                 if (testParent) {
                     parent = testParent;
+                    definition = this.safeRun(() => {
+                        var _a, _b;
+                        const senseSingleElement = Array.from(parent.children).find((child) => child.classList.contains('sense_single'));
+                        if (senseSingleElement) {
+                            return (_b = (_a = senseSingleElement.querySelector('.def')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim();
+                        }
+                    });
                 }
             }
             else {
                 parent = dom;
+                definition = (_b = (_a = parent.querySelector('.def')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim();
             }
-            definition.definition = this.safeRun(() => {
-                var _a, _b;
-                const senseSingleElement = Array.from(parent.children).find((child) => child.classList.contains('sense_single'));
-                if (senseSingleElement) {
-                    return (_b = (_a = senseSingleElement.querySelector('.def')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim();
-                }
-            });
-            // get reference
-            const subParent = this.safeRun(() => {
-                const senseSingleElement = Array.from(parent.children).find((child) => child.classList.contains('sense_single'));
-                if (senseSingleElement) {
-                    return parent.querySelector('.sense_single .xrefs');
-                }
-            });
-            definition.reference = {
-                hint: this.safeRun(() => { var _a, _b; return (_b = (_a = subParent === null || subParent === void 0 ? void 0 : subParent.querySelector('.prefix')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); }),
+        }
+        catch (e) {
+            this.log(e);
+        }
+        return definition;
+    }
+    getReferenceGroup(dom, parentElement = false) {
+        let refGroup = {};
+        try {
+            let parent;
+            if (!parentElement) {
+                parent = dom.querySelector('.entry > .sense_single > .sense .xrefs');
+            }
+            else {
+                parent = Array.from(dom.children).find((child) => child.classList.contains('xrefs'));
+            }
+            refGroup = {
+                hint: this.safeRun(() => { var _a, _b; return (_b = (_a = parent === null || parent === void 0 ? void 0 : parent.querySelector('.prefix')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); }),
                 references: this.safeRun(() => {
-                    return Array.from(subParent.querySelectorAll('.Ref')).map((refElement) => {
+                    return Array.from(parent.querySelectorAll('.Ref')).map((refElement) => {
                         const reference = this.getReference(refElement, true);
                         return reference;
                     });
@@ -632,7 +801,7 @@ class OALEnglishDictionary {
         catch (e) {
             this.log(e);
         }
-        return definition;
+        return refGroup;
     }
     getReference(dom, parentElement = false) {
         let reference = {};
@@ -644,8 +813,11 @@ class OALEnglishDictionary {
             else {
                 parent = dom;
             }
-            reference.link = this.safeRun(() => { var _a; return (_a = parent.getAttribute('href')) === null || _a === void 0 ? void 0 : _a.split('=').pop(); });
-            reference.spelling = this.safeRun(() => { var _a, _b; return (_b = (_a = parent.querySelector('.xr-g .xh')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+            let link = this.safeRun(() => { var _a; return (_a = parent.getAttribute('href')) === null || _a === void 0 ? void 0 : _a.split('/').pop(); });
+            link = this.safeRun(() => link === null || link === void 0 ? void 0 : link.split('#').shift()) || link;
+            link = this.safeRun(() => link === null || link === void 0 ? void 0 : link.split('=').pop()) || link;
+            reference.link = link;
+            reference.spelling = this.safeRun(() => { var _a, _b; return (_b = (_a = parent.querySelector('.xr-g')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
         }
         catch (e) {
             this.log(e);
@@ -716,38 +888,122 @@ class OALEnglishDictionary {
         }
         return result;
     }
+    getLabels(dom, parentElement = false) {
+        var _a, _b, _c, _d;
+        let result = undefined;
+        try {
+            let parent;
+            if (!parentElement) {
+                parent = dom.querySelector('.entry .webtop');
+                result = ((_b = (_a = this.safeRun(() => {
+                    return Array.from(parent.children).find((child) => {
+                        return child.classList.contains('labels');
+                    });
+                })) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || undefined;
+            }
+            else {
+                parent = dom;
+                result = ((_d = (_c = this.safeRun(() => {
+                    return Array.from(parent.children).find((child) => {
+                        return child.classList.contains('labels');
+                    });
+                })) === null || _c === void 0 ? void 0 : _c.textContent) === null || _d === void 0 ? void 0 : _d.trim()) || undefined;
+            }
+        }
+        catch (e) {
+            this.log(e);
+        }
+        return result;
+    }
+    getDisclaimer(dom, parentElement = false) {
+        let result = undefined;
+        try {
+            let parent;
+            if (!parentElement) {
+                parent = dom.querySelector('.webtop');
+                result = this.safeRun(() => { var _a, _b; return (_b = (_a = parent.querySelector('.dis-g')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+            }
+            else {
+                parent = dom;
+                result = this.safeRun(() => { var _a, _b; return (_b = (_a = parent.querySelector('.dis-g')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+            }
+        }
+        catch (e) {
+            this.log(e);
+        }
+        return result;
+    }
+    getUsage(dom, parentElement = false) {
+        let result = undefined;
+        try {
+            let parent;
+            if (!parentElement) {
+                parent = dom.querySelector('.webtop');
+                result = this.safeRun(() => { var _a, _b; return (_b = (_a = parent.querySelector('.use')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+            }
+            else {
+                parent = dom;
+                result = this.safeRun(() => { var _a, _b; return (_b = (_a = parent.querySelector('.use')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+            }
+        }
+        catch (e) {
+            this.log(e);
+            return '';
+        }
+        return result;
+    }
     getHtmlByLink(link) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.page.goto(`${this.linkBase}${link}`, { waitUntil: 'domcontentloaded' });
-            // Get the HTML content of the page
-            const searchResultsSelector = '.responsive_row';
-            yield this.page.waitForSelector(searchResultsSelector);
-            const pageHTML = yield this.page.content();
-            this.currentUrl = this.page.url();
-            // Return the HTML content as a string
-            return pageHTML;
+            try {
+                yield this.page.goto(`${this.linkBase}${link}`, { waitUntil: 'domcontentloaded' });
+                // Get the HTML content of the page
+                const searchResultsSelector = '.responsive_row';
+                yield this.page.waitForSelector(searchResultsSelector, { visible: true });
+                const pageHTML = yield this.page.content();
+                this.currentUrl = this.page.url();
+                // Return the HTML content as a string
+                return pageHTML;
+            }
+            catch (e) {
+                this.log(e);
+                this.close();
+                return '';
+            }
         });
     }
     getHtml(query) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.page.goto(this.linkBase, { waitUntil: 'domcontentloaded' });
-            // await this.page.waitForNavigation({ waitUntil: 'networkidle0' })
-            const searchInputSelector = '#q';
-            const searchButtonSelector = '#search-btn input[type="submit"]'; // Modify selector for the button
-            yield this.page.waitForSelector(searchInputSelector);
-            // Type the query into the search input field
-            yield this.page.type(searchInputSelector, query);
-            // Click the search button
-            yield this.page.click(searchButtonSelector);
-            yield this.page.waitForNavigation({ waitUntil: 'domcontentloaded' });
-            // Wait for the search results to load (you may need to adjust the selector and wait time)
-            const searchResultsSelector = '.responsive_row';
-            yield this.page.waitForSelector(searchResultsSelector);
-            // Get the HTML content of the page
-            const pageHTML = yield this.page.content();
-            this.currentUrl = this.page.url();
-            // Return the HTML content as a string
-            return pageHTML;
+            try {
+                // await this.page.goto(this.linkBase, { waitUntil: 'domcontentloaded' });
+                // const searchInputSelector = '#q';
+                // const searchButtonSelector = '#search-btn input[type="submit"]';
+                // // Wait for the search input field to appear
+                // await this.page.waitForSelector(searchInputSelector, { visible: true });
+                // // Type the query into the search input field
+                // await this.page.type(searchInputSelector, query);
+                // // Click the search button
+                // await this.page.click(searchButtonSelector);
+                // // Wait for the search results to load (you may need to adjust the selector and wait time)
+                // const searchResultsSelector = '.responsive_row';
+                // // Wait for the search results selector to be visible
+                // await this.page.waitForSelector(searchResultsSelector, { visible: true });
+                // // Get the HTML content of the page
+                // const pageHTML = await this.page.content();
+                // this.currentUrl = this.page.url();
+                yield this.page.goto(`${this.searchLink}${this.stringToLinkType(query)}`, { waitUntil: 'domcontentloaded' });
+                // Get the HTML content of the page(
+                const searchResultsSelector = '.responsive_row';
+                yield this.page.waitForSelector(searchResultsSelector, { visible: true });
+                const pageHTML = yield this.page.content();
+                this.currentUrl = this.page.url();
+                // Return the HTML content as a string
+                return pageHTML;
+            }
+            catch (e) {
+                this.log(e);
+                this.close();
+                return '';
+            }
         });
     }
     parseHTML(html) {
@@ -765,6 +1021,12 @@ class OALEnglishDictionary {
                 yield this.browser.close();
             }
         });
+    }
+    stringToLinkType(inputString) {
+        return this.safeRun(() => {
+            const encodedString = querystring.escape(inputString);
+            return encodedString;
+        }) || inputString;
     }
 }
 function OALDic() {

@@ -18,6 +18,7 @@ declare class GifEngine {
     private parseHTML;
     private getHtmlByLink;
     private close;
+    private stringToLinkType;
 }
 export default function GifImages(): GifEngine;
 export {};

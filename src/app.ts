@@ -1,3 +1,4 @@
+import { MonthlyCourse } from "./payment-engine/payment-engine";
 import TxtEngine from "./text-engine/text-engine";
 
 export class MinsPerWeek {
@@ -10,17 +11,6 @@ export class Time {
     hours?: number;
     minutes?: number;
 };
-
-export class Schedule {
-    day?: Day;
-    time?: Time;
-}
-
-export class MonthlyCourse {
-    minsPerWeek?: MinsPerWeek;
-    schedules?: Schedule[];
-    startDate?: Date;
-}
 
 export class Rate {
     amount?: number;
@@ -89,4 +79,4 @@ export class MobileMoney {
 
 (async () => {
     await TxtEngine().processTextFile();
-})()
+})();

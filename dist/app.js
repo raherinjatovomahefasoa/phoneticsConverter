@@ -14,9 +14,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const oalenglish_dictionary_1 = __importDefault(require("./oalenglish-dictionary/oalenglish-dictionary"));
 (() => __awaiter(void 0, void 0, void 0, function* () {
-    const word = 'walk';
-    let entry = yield (0, oalenglish_dictionary_1.default)().searchWord(word);
-    console.log(entry);
-    // const savedEntry = await OALDic().saveSounds(entry);
-    // console.log((savedEntry as any).inflections[0].phonetics);
+    const link = 'good_1';
+    const word = `good`;
+    // const wordEntry = await OALDic().searchWordLink(link);
+    const wordEntry = yield (0, oalenglish_dictionary_1.default)().searchWord(word);
+    // const wordEntry = await StockImage().search(word);
+    // const wordEntry = await GifImages().search(word);
+    console.log(wordEntry.inflections[1].phonetics);
 }))();

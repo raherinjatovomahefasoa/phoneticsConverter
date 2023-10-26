@@ -5,18 +5,11 @@ import PhonEngine from '../phonetics-engine/phonetics-engine';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import * as path from 'path';
+import * as querystring from 'querystring';
 
 export class Pronunciation {
     phonetics?: string;
     sound?: string;
-}
-
-export class Idiom {
-    idiom?: string;
-    definiton?: string;
-    usage?: string;
-    labels?: string;
-    examples?: SenseExample[];
 }
 
 type VerbFormType = 'root' | 'thirdps' | 'past' | 'pastpart' | 'prespart' | 'neg' | 'short';
@@ -42,13 +35,48 @@ export class Inflection {
 }
 
 export class Sense {
-    level?: string;
+    level?: string; //
+    variants?: Variant[]; //
+    partOfSpeech?: string; //
+    usage?: string;  //
+    labels?: string; //
+    disclaimer?: string; //
+    definition?: string; //
+    referenceGroup?: ReferenceGroup;
+    grammar?: string; //
+    cf?: string; //
+    senseTop?: SenseTop;
+    examples?: SenseExample[]; //
+}
+
+export class PhrasalVerbEntry {
+    spelling?: string;
+    usage?: string;
+    labels?: string;
     variants?: Variant[];
-    partOfSpeech?: string;
-    definition?: string;
-    grammar?: string;
-    cf?: string;
-    examples?: SenseExample[];
+    disclaimer?: string;
+    senses?: Sense[];
+}
+export class Idiom {
+    idiom?: string;
+    // definition?: string;
+    usage?: string;
+    labels?: string;
+    variants?: Variant[];
+    // partOfSpeech?: string;
+    disclaimer?: string;
+    // referenceGroup?: ReferenceGroup;
+    // grammar?: string;
+    // cf?: string;
+    senses?: Sense[];
+    // examples?: SenseExample[];
+}
+
+export class SenseTop {
+    labels?: string;
+    variants?: Variant[];
+    disclaimer?: string;
+    usage?: string;
 }
 
 export class SenseEntry {
@@ -57,9 +85,15 @@ export class SenseEntry {
 }
 
 export class SenseExample {
+    labels?: string;
     cf?: string;
-    example?: string;
+    sentence?: SentenceExample;
+}
+
+export class SentenceExample {
+    sentence?: string;
     highlight?: string;
+    gloss?: string;
 }
 
 export class Phonetics {
@@ -68,18 +102,25 @@ export class Phonetics {
 }
 
 export class WordEntry {
+    usage?: string; //
+    disclaimer?: string; //
     link?: string;
-    spelling?: string;
-    partOfSpeech?: string;
-    level?: string;
-    grammar?: string;
-    variants?: Variant[];
-    phonetics?: Phonetics;
-    definition?: Definition;
+    spelling?: string; //
+    phrasalVerbEntries?: PhrasalVerbEntry[];
+    partOfSpeech?: string; //
+    labels?: string; //
+    level?: string; //
+    grammar?: string; //
+    // examples?: SenseExample[];
+    variants?: Variant[]; //
+    phonetics?: Phonetics; //
+    // definition?: string; //
+    referenceGroup?: ReferenceGroup; //
     inflections?: Inflection[];
-    verbForms?: VerbFormGroup[];
-    senses?: SenseEntry[] | Sense[];
-    idioms?: Idiom[];
+    verbForms?: VerbFormGroup[]; //
+    senses?: SenseEntry[] | Sense[]; //
+    idioms?: Idiom[]; //
+    phrasalVerbs?: PhrasalVerb[]; //
     nearbyWords?: NearbyWord[];
     resultList?: string[];
 }
@@ -88,11 +129,6 @@ export class NearbyWord {
     link?: string;
     spelling?: string;
     partOfSpeech?: string;
-}
-
-export class Definition {
-    definition?: string;
-    reference?: ReferenceGroup;
 }
 
 export class ReferenceGroup {
@@ -105,10 +141,15 @@ export class Reference {
     spelling?: string;
 }
 
+export class PhrasalVerb {
+    reference?: Reference;
+}
+
 class OALEnglishDictionary {
     constructor() {}
 
     private linkBase = 'https://www.oxfordlearnersdictionaries.com/definition/english/';
+    private searchLink = 'https://www.oxfordlearnersdictionaries.com/search/english/?q=';
     private browser!: Browser;
     private currentUrl!: string;
     private page!: Page;
@@ -125,32 +166,35 @@ class OALEnglishDictionary {
         }
     }
     private async initialize() {
-        console.log('start');
-        await this.createUserDataDirectory();
-        this.browser = await puppeteer.launch({
-            headless: 'new', // Opt in to the new headless mode
-            userDataDir: this.userDataDir,
-            args: ['--no-sandbox', '--disable-setuid-sandbox'], // Use these flags for better compatibility
-            devtools: false, // Disable DevTools
-        });
-        this.page = await this.browser.newPage();
+        try {
+            await this.createUserDataDirectory();
+            this.browser = await puppeteer.launch({
+                headless: 'new', // Opt in to the new headless mode
+                userDataDir: this.userDataDir,
+                args: ['--no-sandbox', '--disable-setuid-sandbox'], // Use these flags for better compatibility
+                devtools: false, // Disable DevTools
+            });
+            this.page = await this.browser.newPage();
 
-        // Enable request interception
-        await this.page.setRequestInterception(true);
+            // Enable request interception
+            await this.page.setRequestInterception(true);
 
-            // Intercept and block certain types of requests
-            this.page.on('request', (request: any) => {
-            if (
-                request.resourceType() === 'image' || // Block image requests
-                request.resourceType() === 'stylesheet' || // Block CSS requests
-                request.resourceType() === 'media' || // Media resources include audio and video
-                request.resourceType() === 'font'
-            ) {
-                request.abort();
-            } else {
-                request.continue();
-            }
-        });
+                // Intercept and block certain types of requests
+                this.page.on('request', (request: any) => {
+                if (
+                    request.resourceType() === 'image' || // Block image requests
+                    request.resourceType() === 'stylesheet' || // Block CSS requests
+                    request.resourceType() === 'media' || // Media resources include audio and video
+                    request.resourceType() === 'font'
+                ) {
+                    request.abort();
+                } else {
+                    request.continue();
+                }
+            });
+        } catch (e) {
+            this.log(e);
+        }
     }
 
     async searchWordLink(link: string): Promise<WordEntry> {
@@ -161,7 +205,7 @@ class OALEnglishDictionary {
         return this.scrape(htmlContent);
     }
 
-    async saveSounds<T>(obj: T, spelling?: string): Promise<T> {
+    async saveSounds<T>(dir: string, dataDir: string, obj: T, spelling?: string,): Promise<T> {
             // Base case: if obj is not an object, return it as is
             if (typeof obj !== 'object' || obj === null) {
                 return obj;
@@ -172,12 +216,12 @@ class OALEnglishDictionary {
             for (const key in obj) {
                 if (obj.hasOwnProperty(key)) {
                     // Recursively call modifySoundKey for nested objects
-                    modifiedObj[key] = await this.saveSounds(obj[key], title);
+                    modifiedObj[key] = await this.saveSounds(dir, dataDir, obj[key], title);
                     // Check if the key is 'sound', and if so, run the callback function
                     if (key === 'sound') {
                         if (obj[key]) {
                             await this.safeRun(async () => {
-                                modifiedObj[key] = await this.downloadAndSaveMp3(obj[key] as string, title);
+                                modifiedObj[key] = await this.downloadAndSaveMp3(dir, dataDir, obj[key] as string, title);
                             })
                         }
                     }
@@ -185,7 +229,7 @@ class OALEnglishDictionary {
             }
         return modifiedObj;
     }
-    private async downloadAndSaveMp3(url: string, name: string): Promise<string> {
+    private async downloadAndSaveMp3(dir: string, dataDir: string, url: string, name: string): Promise<string> {
         try {
             // Use Axios to download the MP3 file
             const response = await axios.get(url, { responseType: 'arraybuffer' });
@@ -198,11 +242,20 @@ class OALEnglishDictionary {
             title = this.sanitizeFileName(title);
             const newFileName = `${title}_${uniqueString}${fileExtension}`;
             // Save the downloaded file to the 'uploads' directory
-            const filePath = path.join(__dirname, '../../uploads', newFileName);
+            try {
+                // Use fs.access to check if the directory exists
+                await fs.access(dataDir);
+            } catch (error) {
+                // If it doesn't exist, create it
+                await fs.mkdir(dataDir, { recursive: true });
+            }
+            const filePath = path.join(dir, dataDir, newFileName);
             await fs.writeFile(filePath, response.data);
         
             return newFileName;
-        } catch (error) {
+        } catch (e) {
+            this.log(e);
+            console.error(e);
             return url;
         }
     }
@@ -279,16 +332,21 @@ class OALEnglishDictionary {
         const wordEntry: WordEntry = {};
         wordEntry.link = this.getLink(this.currentUrl);
         wordEntry.spelling = this.getWord(dom);
+        wordEntry.labels = this.getLabels(dom);
+        wordEntry.disclaimer = this.getDisclaimer(dom);
+        wordEntry.usage = this.getUsage(dom);
         wordEntry.partOfSpeech = this.getPartOfSpeech(dom);
         wordEntry.level = this.getLevel(dom);
         wordEntry.grammar = this.getGrammar(dom);
         wordEntry.variants = this.getVariants(dom);
         wordEntry.phonetics = this.getMainPhonetics(dom);
-        wordEntry.definition = this.getDefinition(dom);
+        wordEntry.referenceGroup = this.getReferenceGroup(dom);
         wordEntry.inflections = this.getInflections(dom);
         wordEntry.verbForms = this.getVerbForms(dom);
+        wordEntry.phrasalVerbEntries = this.getPhrasalVerbEntries(dom);
         wordEntry.senses = this.getSensesAll(dom);
         wordEntry.idioms = this.getIdioms(dom);
+        wordEntry.phrasalVerbs = this.getPhrasalVerbs(dom);
         wordEntry.nearbyWords = this.getNearbyWords(dom);
         wordEntry.resultList = this.getResultItems(dom);
         return wordEntry;
@@ -324,13 +382,44 @@ class OALEnglishDictionary {
                     const inflection: Inflection = {};
                     inflection.type = this.safeRun<string>(() => elementGroup[0].textContent?.replace(/[+(),]/g, '').trim());
                     inflection.spelling = this.safeRun<string>(() => elementGroup[1].textContent?.trim());
-                    inflection.phonetics = {
-                        british: this.getRPPronunciation(dom, elementGroup[2]),
-                        northAmerican: this.getGAPronunciation(dom, elementGroup[2]),
+                    const container = dom.querySelector('.inflections') as Element;
+                    // get PHonetics
+                    for (const child of elementGroup) {
+                        try {
+                            if (child.classList.contains('phonetics')) {
+                                inflection.phonetics = {
+                                    british: this.getRPPronunciation(dom, child),
+                                    northAmerican: this.getGAPronunciation(dom, child),
+                                }
+                            };
+                        } catch (e) {}
                     }
                     return inflection;
                 })
                 result = inflections;
+            }
+        } catch (e) {
+            this.log(e);
+        }
+        return result;
+    }
+
+    private getPhrasalVerbs(dom: Document): PhrasalVerb[] {
+        let result: PhrasalVerb[] = [];
+        try {
+            const container = this.safeRun<Element>(() => dom.querySelector('.phrasal_verb_links .pvrefs'));
+            if (container) {
+                const phrasalVerbsRaw = Array.from(container.querySelectorAll('.li'));
+                const phrasalVerbs = phrasalVerbsRaw.map((phrasalVerbElment) => {
+                    const refElement = this.safeRun<Element>(() => phrasalVerbElment.querySelector('.Ref'));
+                    const phrasalVerb: PhrasalVerb = {};
+                    if (refElement) {
+                        phrasalVerb.reference = this.getReference(refElement, true);
+                    }
+                    return phrasalVerb;
+                });
+
+                result = phrasalVerbs;
             }
         } catch (e) {
             this.log(e);
@@ -346,11 +435,24 @@ class OALEnglishDictionary {
                 const idiomsRaw = Array.from(container.querySelectorAll('.idm-g'));
                 const idioms = idiomsRaw.map((idiomElement) => {
                     const idiom: Idiom = {};
-                    idiom.idiom = this.safeRun<string>(() => idiomElement.querySelector('.top-container')?.textContent?.trim());
-                    idiom.definiton = this.safeRun<string>(() => idiomElement.querySelector('.def')?.textContent?.trim());
-                    idiom.usage = this.safeRun<string>(() => idiomElement.querySelector('.use')?.textContent?.trim());
-                    idiom.labels = this.safeRun<string>(() => idiomElement.querySelector('.labels')?.textContent?.trim());
-                    idiom.examples = this.getSenseExamples(idiomElement);
+                    idiom.idiom = this.safeRun<string>(() => idiomElement.querySelector('.top-container .webtop .idm')?.textContent?.trim());
+                    // idiom.definition = this.safeRun<string>(() => idiomElement.querySelector('.def')?.textContent?.trim());
+                    // idiom.disclaimer = this.safeRun<string>(() => idiomElement.querySelector('.dis-g')?.textContent?.trim());
+                    idiom.usage = this.safeRun<string>(() => idiomElement.querySelector('.top-container .webtop .use')?.textContent?.trim());
+                    idiom.labels = this.safeRun(() => {
+                        return this.getLabels(idiomElement.querySelector('.top-container .webtop') as Element, true);
+                    });
+                    idiom.disclaimer = this.safeRun<string>(() => idiomElement.querySelector('.top-container .webtop .dis-g')?.textContent?.trim());
+                    // idiom.examples = this.getSenseExamples(idiomElement);
+                    idiom.variants = this.getVariants(idiomElement, true);
+                    idiom.senses = this.safeRun(() => {
+                        const container = idiomElement.querySelector('ol') as Element;
+                        return this.getSenses(container, true);
+                    });
+                    // idiom.referenceGroup = this.getReferenceGroup(idiomElement, true);
+                    // idiom.grammar = this.getGrammar(idiomElement, true);
+                    // idiom.partOfSpeech = this.getPartOfSpeech(idiomElement, true);
+                    // idiom.cf = this.safeRun<string>(() => idiomElement.querySelector('.cf')?.textContent?.trim());
                     return idiom;
                 });
 
@@ -362,6 +464,72 @@ class OALEnglishDictionary {
         return result;
     }
 
+    private getSenseTop(sense: Element): SenseTop {
+        let senseTop: SenseTop = {};
+        try {
+            const container = this.safeRun<Element>(() => {
+                return Array.from(sense.children).find((child) => {
+                    return child.classList.contains('sensetop');
+                });
+            });
+            if (container) {
+                // idiom.definition = this.safeRun<string>(() => idiomElement.querySelector('.def')?.textContent?.trim());
+                // idiom.disclaimer = this.safeRun<string>(() => idiomElement.querySelector('.dis-g')?.textContent?.trim());
+                senseTop.usage = this.safeRun<string>(() => container.querySelector('.use')?.textContent?.trim());
+                senseTop.labels = this.safeRun(() => this.getLabels(container, true));
+                senseTop.disclaimer = this.safeRun<string>(() => container.querySelector('.dis-g')?.textContent?.trim());
+                // idiom.examples = this.getSenseExamples(idiomElement);
+                senseTop.variants = this.safeRun(() => this.getVariants(container, true));
+            }
+        } catch (e) {
+            this.log(e);
+        }
+        return senseTop;
+    }
+    private getPhrasalVerbEntries(dom: Document): PhrasalVerbEntry[] {
+        let result: PhrasalVerbEntry[] = [];
+        try {
+            const container = this.safeRun<Element>(() => dom.querySelector('.entry'));
+            if (container) {
+                const phrasalVerbEntriesRaw = Array.from(container.children).filter((child) => child.classList.contains('pv-g'));
+                const phrasalVerbEntries = phrasalVerbEntriesRaw.map((phrasalVerbEntryElement) => {
+                    const phrasalVerbEntry: PhrasalVerbEntry = {};
+                    phrasalVerbEntry.spelling = this.safeRun(() => phrasalVerbEntryElement.querySelector('.webtop .pv')?.textContent?.trim());
+                    phrasalVerbEntry.usage = this.safeRun<string>(() => phrasalVerbEntryElement.querySelector('.top-container .webtop .use')?.textContent?.trim());
+                    phrasalVerbEntry.labels = this.safeRun(() => {
+                        return this.getLabels(phrasalVerbEntryElement.querySelector('.top-container .webtop') as Element, true);
+                    });
+                    phrasalVerbEntry.disclaimer = this.safeRun<string>(() => phrasalVerbEntryElement.querySelector('.top-container .webtop .dis-g')?.textContent?.trim());
+                    // phrasalVerbEntry.examples = this.getSenseExamples(phrasalVerbEntryElement);
+                    phrasalVerbEntry.variants = this.getVariants(phrasalVerbEntryElement, true);
+                    phrasalVerbEntry.senses = this.safeRun(() => {
+                        const container = phrasalVerbEntryElement.querySelector('ol') as Element;
+                        const senses = this.getSenses(container, true);
+                        return senses;
+                    });
+                    return phrasalVerbEntry;
+                });
+                result = phrasalVerbEntries;
+            }
+        } catch (e) {
+            this.log(e);
+        }
+        return result;
+    }
+    private getSentenceExample(senteceElement: Element): SentenceExample {
+        let sentenceExample: SentenceExample = {};
+        try {
+            const container = senteceElement;
+            if (container) {
+                sentenceExample.sentence = this.safeRun<string>(() => container.querySelector('.x')?.textContent?.trim());
+                sentenceExample.gloss = this.safeRun<string>(() => container.querySelector('.x .gloss')?.textContent?.trim());
+                sentenceExample.highlight = this.safeRun<string>(() => container.querySelector('.x .cl')?.textContent?.trim());
+            }
+        } catch (e) {
+            this.log(e);
+        }
+        return sentenceExample;
+    }
     private getSenseExamples(senseElement: Element): SenseExample[] {
         let result: SenseExample[] = [];
         try {
@@ -370,9 +538,9 @@ class OALEnglishDictionary {
                 const examplesRaw = Array.from(container.children);
                 const examples = examplesRaw.map((exampleElement) => {
                     const example: SenseExample = {};
+                    example.labels = this.safeRun<string>(() => exampleElement.querySelector('.labels')?.textContent?.trim());
                     example.cf = this.safeRun<string>(() => exampleElement.querySelector('.cf')?.textContent?.trim());
-                    example.example = this.safeRun<string>(() => exampleElement.querySelector('.x')?.textContent?.trim());
-                    example.highlight = this.safeRun<string>(() => exampleElement.querySelector('.cl')?.textContent?.trim());
+                    example.sentence = this.getSentenceExample(exampleElement);
                     return example;
                 });
                 result = examples;
@@ -384,11 +552,11 @@ class OALEnglishDictionary {
     }
 
     private getSensesAll(dom: Document): SenseEntry[] | Sense[]{
-        let result: SenseEntry[] | Sense[] = this.getSenseEntries(dom);
+        let result: SenseEntry[] | Sense[] = this.getSenses(dom);
         if (result.length > 0) {
             return result;
         } else {
-            result = this.getSenses(dom);
+            result = this.getSenseEntries(dom);
             return result;
         }
     }
@@ -396,15 +564,21 @@ class OALEnglishDictionary {
     private getSenseEntries(dom: Document): SenseEntry[] {
         let result: SenseEntry[]  = [];
         try {
-            const parent = dom.querySelector('.senses_multiple') as HTMLElement;
-            const senseEntriesRaw = Array.from(parent.children).filter((child) => child.tagName === 'SPAN');
-            const senseEntries = senseEntriesRaw.map((senseEntryElement) => {
-                const senseEntry: SenseEntry = {};
-                senseEntry.meaning = this.safeRun<string>(() => senseEntryElement.querySelector('.shcut')?.textContent?.trim());
-                senseEntry.senses = this.getSenses(senseEntryElement, true);
-                return senseEntry;
-            })
-            result = senseEntries;
+            const bigParent = this.safeRun(() => dom.querySelector('.entry')) as Element;
+            if (bigParent) {
+                const parent = Array.from(bigParent.children).find((child) =>
+                    child.classList.contains('senses_multiple')
+                ) as HTMLElement;
+                const senseEntriesRaw = Array.from(parent.children).filter((child) => child.tagName === 'SPAN');
+                const senseEntries = senseEntriesRaw.map((senseEntryElement) => {
+                    const senseEntry: SenseEntry = {};
+                    senseEntry.meaning = this.safeRun<string>(() => senseEntryElement.querySelector('.shcut')?.textContent?.trim());
+                    senseEntry.senses = this.getSenses(senseEntryElement, true);
+                    return senseEntry;
+                })
+                result = senseEntries;
+            }
+            
         } catch (e){
             this.log(e);
         }
@@ -417,7 +591,10 @@ class OALEnglishDictionary {
         try {
             let parent: Element | Document;
             if (!parentElement) {
-                parent = dom.querySelector('.senses_multiple') as HTMLElement;
+                const bigParent = this.safeRun(() => dom.querySelector('.entry')) as Element;
+                parent = Array.from(bigParent.children).find((child) =>
+                    child.classList.contains('senses_multiple') || child.classList.contains('sense_single')
+                ) as HTMLElement;
             } else {
                 parent = dom;
             }
@@ -425,11 +602,20 @@ class OALEnglishDictionary {
             const senses = sensesRaw.map((senseElement) => {
                 const sense: Sense = {};
                 sense.level = this.getLevel(senseElement, true);
+                sense.senseTop = this.getSenseTop(senseElement);
                 sense.variants = this.getVariants(senseElement, true);
                 sense.partOfSpeech = this.getPartOfSpeech(senseElement, true);
+                sense.disclaimer = this.safeRun<string>(() => senseElement.querySelector('.dis-g')?.textContent?.trim());
                 sense.definition = this.safeRun<string>(() => senseElement.querySelector('.def')?.textContent?.trim());
+                sense.referenceGroup = this.getReferenceGroup(senseElement, true);
+                sense.usage = this.safeRun<string>(() => senseElement.querySelector('.use')?.textContent?.trim());
+                sense.labels = this.getLabels(senseElement, true);
                 sense.grammar = this.safeRun<string>(() => senseElement.querySelector('.grammar')?.textContent?.trim());
-                sense.cf = this.safeRun<string>(() => senseElement.querySelector('.cf')?.textContent?.trim());
+                sense.cf = this.safeRun<string>(() => {
+                    return Array.from(senseElement.children).find((child) => {
+                        return child.classList.contains('cf');
+                    })?.textContent?.trim();
+                });
                 // get example
                 sense.examples = this.getSenseExamples(senseElement);
                 return sense;
@@ -604,39 +790,48 @@ class OALEnglishDictionary {
         return result;
     }
 
-    private getDefinition(dom: Document | Element, parentElement = false): Definition{
-        let definition: Definition = {};
+    private getDefinition(dom: Document | Element, parentElement = false): string | undefined{
+        let definition: string | undefined;
         try {
             let parent: Element;
             if (!parentElement) {
                 const testParent = this.safeRun<HTMLDivElement>(() => dom.querySelector('.entry'));
                 if (testParent) {
                     parent = testParent;
+                    definition = this.safeRun<string>(() => {
+                        const senseSingleElement = Array.from(parent.children).find((child) =>
+                            child.classList.contains('sense_single')
+                        );
+                        if (senseSingleElement) {
+                            return senseSingleElement.querySelector('.def')?.textContent?.trim();
+                        }
+                    });
                 }
             } else {
                 parent = dom as Element;
+                definition = parent.querySelector('.def')?.textContent?.trim();
             }
-            definition.definition = this.safeRun<string>(() => {
-                const senseSingleElement = Array.from(parent.children).find((child) =>
-                    child.classList.contains('sense_single')
-                );
-                if (senseSingleElement) {
-                    return senseSingleElement.querySelector('.def')?.textContent?.trim();
-                }
-            });
-            // get reference
-            const subParent = this.safeRun<Element>(() => {
-                const senseSingleElement = Array.from(parent.children).find((child) =>
-                    child.classList.contains('sense_single')
-                );
-                if (senseSingleElement) {
-                    return parent.querySelector('.sense_single .xrefs')
-                }
-            });
-            definition.reference = {
-                hint: this.safeRun<string>(() => subParent?.querySelector('.prefix')?.textContent?.trim()),
+            
+        } catch (e) {
+            this.log(e);
+        }
+        return definition;
+    }
+    private getReferenceGroup(dom: Document | Element, parentElement = false): ReferenceGroup{
+        let refGroup: ReferenceGroup = {};
+        try {
+            let parent: Element;
+            if (!parentElement) {
+                parent = dom.querySelector('.entry > .sense_single > .sense .xrefs') as HTMLDivElement;
+            } else {
+                parent = Array.from(dom.children).find((child) =>
+                        child.classList.contains('xrefs')
+                    ) as Element;
+            }
+            refGroup = {
+                hint: this.safeRun<string>(() => parent?.querySelector('.prefix')?.textContent?.trim()),
                 references: this.safeRun<Reference[]>(() => {
-                    return Array.from((subParent as Element).querySelectorAll('.Ref')).map((refElement) => {
+                    return Array.from((parent as Element).querySelectorAll('.Ref')).map((refElement) => {
                         const reference = this.getReference(refElement, true);
                         return reference;
                     });
@@ -645,8 +840,10 @@ class OALEnglishDictionary {
         } catch (e) {
             this.log(e);
         }
-        return definition;
+        return refGroup;
     }
+
+    
 
     private getReference(dom: Document | Element, parentElement = false): Reference{
         let reference: Reference  = {};
@@ -658,8 +855,11 @@ class OALEnglishDictionary {
             } else {
                 parent = dom as Element;
             }
-            reference.link = this.safeRun<string>(() => parent.getAttribute('href')?.split('=').pop());
-            reference.spelling = this.safeRun<string>(() => parent.querySelector('.xr-g .xh')?.textContent?.trim());
+            let link = this.safeRun<string>(() => parent.getAttribute('href')?.split('/').pop());
+            link = this.safeRun<string>(() => link?.split('#').shift()) || link;
+            link = this.safeRun<string>(() => link?.split('=').pop()) || link;
+            reference.link = link;
+            reference.spelling = this.safeRun<string>(() => parent.querySelector('.xr-g')?.textContent?.trim());
         } catch (e) {
             this.log(e);
         }
@@ -727,37 +927,119 @@ class OALEnglishDictionary {
         return result;
     }
 
+    private getLabels(dom: Document | Element, parentElement = false): string | undefined{
+        let result: string | undefined = undefined;
+        try {
+            let parent: Element;
+            if (!parentElement) {
+                parent = dom.querySelector('.entry .webtop') as HTMLDivElement;
+                result = this.safeRun<Element>(() => {
+                    return Array.from(parent.children).find((child) => {
+                        return child.classList.contains('labels');
+                    });
+                })?.textContent?.trim() || undefined;
+            } else {
+                parent = dom as Element;
+                result = this.safeRun<Element>(() => {
+                    return Array.from(parent.children).find((child) => {
+                        return child.classList.contains('labels');
+                    });
+                })?.textContent?.trim() || undefined;
+            }
+        } catch (e) {
+            this.log(e);
+        }
+        return result;
+    }
+
+    private getDisclaimer(dom: Document | Element, parentElement = false): string | undefined{
+        let result: string | undefined = undefined;
+        try {
+            let parent: Element;
+            if (!parentElement) {
+                parent = dom.querySelector('.webtop') as HTMLDivElement;
+                result = this.safeRun<string>(() => parent.querySelector('.dis-g')?.textContent?.trim());
+            } else {
+                parent = dom as Element;
+                result = this.safeRun<string>(() => parent.querySelector('.dis-g')?.textContent?.trim());
+            }
+        } catch (e) {
+            this.log(e);
+        }
+        return result;
+    }
+    private getUsage(dom: Document | Element, parentElement = false): string | undefined{
+        let result: string | undefined = undefined;
+        try {
+            let parent: Element;
+            if (!parentElement) {
+                parent = dom.querySelector('.webtop') as HTMLDivElement;
+                result = this.safeRun<string>(() => parent.querySelector('.use')?.textContent?.trim());
+            } else {
+                parent = dom as Element;
+                result = this.safeRun<string>(() => parent.querySelector('.use')?.textContent?.trim());
+            }
+        } catch (e) {
+            this.log(e);
+            return '';
+        }
+        return result;
+    }
     private async getHtmlByLink(link: string): Promise<string> {
-        await this.page.goto(`${this.linkBase}${link}`, { waitUntil: 'domcontentloaded' });
-        // Get the HTML content of the page
-        const searchResultsSelector = '.responsive_row';
-        await this.page.waitForSelector(searchResultsSelector);
-        const pageHTML = await this.page.content();
-        this.currentUrl = this.page.url();
-        // Return the HTML content as a string
-        return pageHTML;
+        try {
+            await this.page.goto(`${this.linkBase}${link}`, { waitUntil: 'domcontentloaded' });
+            // Get the HTML content of the page
+            const searchResultsSelector = '.responsive_row';
+            await this.page.waitForSelector(searchResultsSelector, { visible: true });
+            const pageHTML = await this.page.content();
+            this.currentUrl = this.page.url();
+            // Return the HTML content as a string
+            return pageHTML;
+        } catch (e) {
+            this.log(e);
+            this.close();
+            return '';
+        }
     }
 
     private async getHtml(query: string): Promise<string> {
-        await this.page.goto(this.linkBase, { waitUntil: 'domcontentloaded' });
-        // await this.page.waitForNavigation({ waitUntil: 'networkidle0' })
-        const searchInputSelector = '#q';
-        const searchButtonSelector = '#search-btn input[type="submit"]'; // Modify selector for the button
-        await this.page.waitForSelector(searchInputSelector);
-        // Type the query into the search input field
-        await this.page.type(searchInputSelector, query);
-        // Click the search button
-        await this.page.click(searchButtonSelector);
-        await this.page.waitForNavigation({ waitUntil: 'domcontentloaded' });
-        // Wait for the search results to load (you may need to adjust the selector and wait time)
-        const searchResultsSelector = '.responsive_row';
-        await this.page.waitForSelector(searchResultsSelector);
-        // Get the HTML content of the page
-        const pageHTML = await this.page.content();
-        this.currentUrl = this.page.url();
+        try {
+            // await this.page.goto(this.linkBase, { waitUntil: 'domcontentloaded' });
+            // const searchInputSelector = '#q';
+            // const searchButtonSelector = '#search-btn input[type="submit"]';
 
-        // Return the HTML content as a string
-        return pageHTML;
+            // // Wait for the search input field to appear
+            // await this.page.waitForSelector(searchInputSelector, { visible: true });
+
+            // // Type the query into the search input field
+            // await this.page.type(searchInputSelector, query);
+
+            // // Click the search button
+            // await this.page.click(searchButtonSelector);
+
+            // // Wait for the search results to load (you may need to adjust the selector and wait time)
+            // const searchResultsSelector = '.responsive_row';
+
+            // // Wait for the search results selector to be visible
+            // await this.page.waitForSelector(searchResultsSelector, { visible: true });
+
+            // // Get the HTML content of the page
+            // const pageHTML = await this.page.content();
+            // this.currentUrl = this.page.url();
+
+            await this.page.goto(`${this.searchLink}${this.stringToLinkType(query)}`, { waitUntil: 'domcontentloaded' });
+            // Get the HTML content of the page(
+            const searchResultsSelector = '.responsive_row';
+            await this.page.waitForSelector(searchResultsSelector, { visible: true });
+            const pageHTML = await this.page.content();
+            this.currentUrl = this.page.url();
+            // Return the HTML content as a string
+            return pageHTML;
+        } catch (e) {
+            this.log(e);
+            this.close();
+            return '';
+        }
     }
     private parseHTML(html: string): Document {
         const { window } = new JSDOM(html);
@@ -772,6 +1054,12 @@ class OALEnglishDictionary {
         if (this.browser) {
             await this.browser.close();
         }
+    }
+    private stringToLinkType(inputString: string): string {
+        return this.safeRun<string>(() => {
+            const encodedString = querystring.escape(inputString);
+            return encodedString;
+        }) || inputString;
     }
 }
 
