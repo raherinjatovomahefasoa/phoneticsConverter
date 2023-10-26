@@ -122,7 +122,7 @@ declare class OALEnglishDictionary {
     private createUserDataDirectory;
     private initialize;
     searchWordLink(link: string): Promise<WordEntry>;
-    saveSounds<T>(obj: T, spelling?: string): Promise<T>;
+    saveSounds<T>(dir: string, dataDir: string, obj: T, spelling?: string): Promise<T>;
     private downloadAndSaveMp3;
     private sanitizeFileName;
     searchWord(query: string): Promise<WordEntry>;

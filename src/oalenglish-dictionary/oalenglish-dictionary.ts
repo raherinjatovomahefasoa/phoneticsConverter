@@ -205,7 +205,7 @@ class OALEnglishDictionary {
         return this.scrape(htmlContent);
     }
 
-    async saveSounds<T>(obj: T, spelling?: string): Promise<T> {
+    async saveSounds<T>(dir: string, dataDir: string, obj: T, spelling?: string,): Promise<T> {
             // Base case: if obj is not an object, return it as is
             if (typeof obj !== 'object' || obj === null) {
                 return obj;
@@ -216,12 +216,12 @@ class OALEnglishDictionary {
             for (const key in obj) {
                 if (obj.hasOwnProperty(key)) {
                     // Recursively call modifySoundKey for nested objects
-                    modifiedObj[key] = await this.saveSounds(obj[key], title);
+                    modifiedObj[key] = await this.saveSounds(dir, dataDir, obj[key], title);
                     // Check if the key is 'sound', and if so, run the callback function
                     if (key === 'sound') {
                         if (obj[key]) {
                             await this.safeRun(async () => {
-                                modifiedObj[key] = await this.downloadAndSaveMp3(obj[key] as string, title);
+                                modifiedObj[key] = await this.downloadAndSaveMp3(dir, dataDir, obj[key] as string, title);
                             })
                         }
                     }
@@ -229,7 +229,7 @@ class OALEnglishDictionary {
             }
         return modifiedObj;
     }
-    private async downloadAndSaveMp3(url: string, name: string): Promise<string> {
+    private async downloadAndSaveMp3(dir: string, dataDir: string, url: string, name: string): Promise<string> {
         try {
             // Use Axios to download the MP3 file
             const response = await axios.get(url, { responseType: 'arraybuffer' });
@@ -242,11 +242,20 @@ class OALEnglishDictionary {
             title = this.sanitizeFileName(title);
             const newFileName = `${title}_${uniqueString}${fileExtension}`;
             // Save the downloaded file to the 'uploads' directory
-            const filePath = path.join(__dirname, '../../uploads', newFileName);
+            try {
+                // Use fs.access to check if the directory exists
+                await fs.access(dataDir);
+            } catch (error) {
+                // If it doesn't exist, create it
+                await fs.mkdir(dataDir, { recursive: true });
+            }
+            const filePath = path.join(dir, dataDir, newFileName);
             await fs.writeFile(filePath, response.data);
         
             return newFileName;
-        } catch (error) {
+        } catch (e) {
+            this.log(e);
+            console.error(e);
             return url;
         }
     }
@@ -374,9 +383,16 @@ class OALEnglishDictionary {
                     inflection.type = this.safeRun<string>(() => elementGroup[0].textContent?.replace(/[+(),]/g, '').trim());
                     inflection.spelling = this.safeRun<string>(() => elementGroup[1].textContent?.trim());
                     const container = dom.querySelector('.inflections') as Element;
-                    inflection.phonetics = {
-                        british: this.getRPPronunciation(dom, parent),
-                        northAmerican: this.getGAPronunciation(dom, parent),
+                    // get PHonetics
+                    for (const child of elementGroup) {
+                        try {
+                            if (child.classList.contains('phonetics')) {
+                                inflection.phonetics = {
+                                    british: this.getRPPronunciation(dom, child),
+                                    northAmerican: this.getGAPronunciation(dom, child),
+                                }
+                            };
+                        } catch (e) {}
                     }
                     return inflection;
                 })

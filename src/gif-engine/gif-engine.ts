@@ -1,7 +1,8 @@
 import fs from 'fs/promises';
 import puppeteer, { Browser, Page } from 'puppeteer';
 import { JSDOM } from 'jsdom';
-// import scrollToBottom from 'scroll-to-bottomjs';
+import * as querystring from 'querystring';
+
 export class GifImage {
     src?: string;
 }
@@ -25,31 +26,35 @@ class GifEngine {
     }
 
     private async initialize() {
-        await this.createUserDataDirectory();
-        this.browser = await puppeteer.launch({
-            headless: 'new', // Opt in to the new headless mode
-            userDataDir: this.userDataDir,
-            args: ['--no-sandbox', '--disable-setuid-sandbox'], // Use these flags for better compatibility
-            devtools: false, // Disable DevTools
-        });
-        this.page = await this.browser.newPage();
+        try {
+            await this.createUserDataDirectory();
+            this.browser = await puppeteer.launch({
+                headless: 'new', // Opt in to the new headless mode
+                userDataDir: this.userDataDir,
+                args: ['--no-sandbox', '--disable-setuid-sandbox'], // Use these flags for better compatibility
+                devtools: false, // Disable DevTools
+            });
+            this.page = await this.browser.newPage();
 
-        // Enable request interception
-        await this.page.setRequestInterception(true);
-        await this.page.setViewport({ width: 1280, height: 10000 });
-        // Intercept and block certain types of requests
-        this.page.on('request', (request: any) => {
-            if (
-                request.resourceType() === 'image' || // Block image requests
-                request.resourceType() === 'stylesheet' || // Block CSS requests
-                request.resourceType() === 'media' || // Media resources include audio and video
-                request.resourceType() === 'font'
-            ) {
-                request.abort();
-            } else {
-                request.continue();
-            }
-        });
+            // Enable request interception
+            await this.page.setRequestInterception(true);
+            await this.page.setViewport({ width: 1280, height: 10000 });
+            // Intercept and block certain types of requests
+            this.page.on('request', (request: any) => {
+                if (
+                    request.resourceType() === 'image' || // Block image requests
+                    request.resourceType() === 'stylesheet' || // Block CSS requests
+                    request.resourceType() === 'media' || // Media resources include audio and video
+                    request.resourceType() === 'font'
+                ) {
+                    request.abort();
+                } else {
+                    request.continue();
+                }
+            });
+        } catch (e) {
+            this.log(e);
+        }
     }
 
     async search(query: string) {
@@ -105,22 +110,33 @@ class GifEngine {
     }
 
     private async getHtmlByLink(link: string): Promise<string> {
-        await this.page.goto(`${this.linkBase}${link}`, { waitUntil: 'domcontentloaded' });
-        // Get the HTML content of the page
-        // Scroll down the page to load more images
-        // await this.page.evaluate(scrollToBottom);
-        const searchResultsSelector = '.giphy-grid';
-        await this.page.waitForSelector(searchResultsSelector);
-        await this.page.waitForTimeout(1400);
-        const pageHTML = await this.page.content();
-        this.currentUrl = this.page.url();
-        // Return the HTML content as a string
-        return pageHTML;
+        try {
+            await this.page.goto(`${this.linkBase}${this.stringToLinkType(link)}`, { waitUntil: 'domcontentloaded' });
+            // Get the HTML content of the page
+            // Scroll down the page to load more images
+            // await this.page.evaluate(scrollToBottom);
+            const searchResultsSelector = '.giphy-grid';
+            await this.page.waitForSelector(searchResultsSelector);
+            await this.page.waitForTimeout(1400);
+            const pageHTML = await this.page.content();
+            this.currentUrl = this.page.url();
+            // Return the HTML content as a string
+            return pageHTML;
+        } catch (e) {
+            this.log(e);
+            return '';
+        }
     }
     private async close() {
         if (this.browser) {
             await this.browser.close();
         }
+    }
+    private stringToLinkType(inputString: string): string {
+        return this.safeRun<string>(() => {
+            const encodedString = querystring.escape(inputString);
+            return encodedString;
+        }) || inputString;
     }
 }
 

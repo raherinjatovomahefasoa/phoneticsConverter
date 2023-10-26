@@ -158,7 +158,7 @@ class OALEnglishDictionary {
             return this.scrape(htmlContent);
         });
     }
-    saveSounds(obj, spelling) {
+    saveSounds(dir, dataDir, obj, spelling) {
         return __awaiter(this, void 0, void 0, function* () {
             // Base case: if obj is not an object, return it as is
             if (typeof obj !== 'object' || obj === null) {
@@ -170,12 +170,12 @@ class OALEnglishDictionary {
             for (const key in obj) {
                 if (obj.hasOwnProperty(key)) {
                     // Recursively call modifySoundKey for nested objects
-                    modifiedObj[key] = yield this.saveSounds(obj[key], title);
+                    modifiedObj[key] = yield this.saveSounds(dir, dataDir, obj[key], title);
                     // Check if the key is 'sound', and if so, run the callback function
                     if (key === 'sound') {
                         if (obj[key]) {
                             yield this.safeRun(() => __awaiter(this, void 0, void 0, function* () {
-                                modifiedObj[key] = yield this.downloadAndSaveMp3(obj[key], title);
+                                modifiedObj[key] = yield this.downloadAndSaveMp3(dir, dataDir, obj[key], title);
                             }));
                         }
                     }
@@ -184,7 +184,7 @@ class OALEnglishDictionary {
             return modifiedObj;
         });
     }
-    downloadAndSaveMp3(url, name) {
+    downloadAndSaveMp3(dir, dataDir, url, name) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 // Use Axios to download the MP3 file
@@ -197,11 +197,21 @@ class OALEnglishDictionary {
                 title = this.sanitizeFileName(title);
                 const newFileName = `${title}_${uniqueString}${fileExtension}`;
                 // Save the downloaded file to the 'uploads' directory
-                const filePath = path.join(__dirname, '../../uploads', newFileName);
+                try {
+                    // Use fs.access to check if the directory exists
+                    yield promises_1.default.access(dataDir);
+                }
+                catch (error) {
+                    // If it doesn't exist, create it
+                    yield promises_1.default.mkdir(dataDir, { recursive: true });
+                }
+                const filePath = path.join(dir, dataDir, newFileName);
                 yield promises_1.default.writeFile(filePath, response.data);
                 return newFileName;
             }
-            catch (error) {
+            catch (e) {
+                this.log(e);
+                console.error(e);
                 return url;
             }
         });
@@ -328,10 +338,19 @@ class OALEnglishDictionary {
                     inflection.type = this.safeRun(() => { var _a; return (_a = elementGroup[0].textContent) === null || _a === void 0 ? void 0 : _a.replace(/[+(),]/g, '').trim(); });
                     inflection.spelling = this.safeRun(() => { var _a; return (_a = elementGroup[1].textContent) === null || _a === void 0 ? void 0 : _a.trim(); });
                     const container = dom.querySelector('.inflections');
-                    inflection.phonetics = {
-                        british: this.getRPPronunciation(dom, parent),
-                        northAmerican: this.getGAPronunciation(dom, parent),
-                    };
+                    // get PHonetics
+                    for (const child of elementGroup) {
+                        try {
+                            if (child.classList.contains('phonetics')) {
+                                inflection.phonetics = {
+                                    british: this.getRPPronunciation(dom, child),
+                                    northAmerican: this.getGAPronunciation(dom, child),
+                                };
+                            }
+                            ;
+                        }
+                        catch (e) { }
+                    }
                     return inflection;
                 });
                 result = inflections;
