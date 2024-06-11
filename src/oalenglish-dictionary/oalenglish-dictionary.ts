@@ -101,11 +101,16 @@ export class Phonetics {
     northAmerican?: Pronunciation[];
 }
 
+export class Spelling {
+    spelling?: string;
+    superScript?: string;
+}
+
 export class WordEntry {
     usage?: string; //
     disclaimer?: string; //
     link?: string;
-    spelling?: string; //
+    spelling?: Spelling; //
     phrasalVerbEntries?: PhrasalVerbEntry[];
     partOfSpeech?: string; //
     labels?: string; //
@@ -154,6 +159,7 @@ class OALEnglishDictionary {
     private currentUrl!: string;
     private page!: Page;
     logError = false;
+    chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
     private userDataDir = './puppeteer-data/oadl-engine';
 
     private async createUserDataDirectory() {
@@ -170,6 +176,7 @@ class OALEnglishDictionary {
             await this.createUserDataDirectory();
             this.browser = await puppeteer.launch({
                 headless: 'new', // Opt in to the new headless mode
+                executablePath: this.chromePath,
                 userDataDir: this.userDataDir,
                 args: ['--no-sandbox', '--disable-setuid-sandbox'], // Use these flags for better compatibility
                 devtools: false, // Disable DevTools
@@ -902,11 +909,12 @@ class OALEnglishDictionary {
         return result;
     }
 
-    private getWord(dom: Document): string | undefined{
-        let result: string | undefined = undefined;
+    private getWord(dom: Document): Spelling{
+        let result: Spelling = {};
         try {
             const parent = dom.querySelector('.webtop') as HTMLDivElement;
-            result = this.safeRun<string>(() => parent.querySelector('.headword')?.textContent?.trim());
+            result.spelling = this.safeRun<string>(() => parent.querySelector('.headword')?.firstChild?.textContent?.trim());
+            result.superScript = this.safeRun<string>(() => parent.querySelector('.headword > .hm')?.textContent?.trim());
         } catch (e) {
             this.log(e);
         }

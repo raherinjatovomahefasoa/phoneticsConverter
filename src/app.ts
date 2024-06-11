@@ -1,3 +1,4 @@
+import OALDic from "./oalenglish-dictionary/oalenglish-dictionary";
 import { MonthlyCourse } from "./payment-engine/payment-engine";
 import TxtEngine from "./text-engine/text-engine";
 import axios from 'axios';
@@ -79,7 +80,11 @@ export class MobileMoney {
 }
 
 // (async () => {
-//     await TxtEngine().processTextFile();
+//     const url = 'are1';
+//     const x = OALDic();
+//     // x.logError = true;
+//     const result = await x.searchWordLink(url);
+//     console.log(result);
 // })();
 
 // (async () => {
