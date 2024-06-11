@@ -15,6 +15,7 @@ class PhoneticsEngine {
     private vowels = ['oʊ', 'eɪ', 'aɪ', 'ɔɪ', 'aʊ', 'i', 'ɪ', 'æ', 'ɑ', 'ʊ', 'ɔ', 'ʌ', 'u', 'ə', 'ɛ'];
     private allVowels = ['ˈ', 'ˌ', 'oʊ', 'eɪ', 'aɪ', 'ɔɪ', 'aʊ', 'i', 'ɪ', 'æ', 'ɑ', 'ʊ', 'ɔ','ʌ', 'u', 'ə', 'ɛ', 'iː', 'ɑː', 'ɔː', 'uː', 'ɜː'];
     private stressedVowels = ['oʊ', 'eɪ', 'aɪ', 'ɔɪ', 'aʊ', 'æ', 'ʌ', 'ɛ', 'iː', 'ɑː', 'ɔː', 'uː', 'ɜː'];
+    private rColored = ['iːr', 'ɑːr', 'ɔːr', 'uːr', 'ɜːr'];
     private twoClusterCons = ['pl', 'pr', 'py', 'bl', 'br', 'by', 'tr', 'ty', 'tw', 'dr', 'dy','dw', 'kl', 'kr', 'ky', 'kw', 'gl', 'gr', 'gw', 'fl', 'fr', 'fy', 'vy', 'θr', 'θr', 'sl', 'sy', 'sw', 'sp', 'st', 'sk', 'sm', 'sn', 'sf', 'ʃr', 'my', 'ny'];
     private threeClusterCons = ['spl', 'spr', 'spy', 'str', 'sty', 'skl', 'skr', 'sky', 'skw'];
     private ticks = ['ˈ', 'ˌ']

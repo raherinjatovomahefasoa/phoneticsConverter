@@ -20,14 +20,16 @@ class TextEngine {
     private renderWords(words: string[]): TextElement[] {
         const wordsNew = [...words];
         const result = wordsNew.map((wordRaw) => {
-            const wordSpelling = (wordRaw.match(/((\d*(\w\.)+)|[a-zA-z'-]+|(\d+\.\d+)|(\d+(?!\.\d+)))/) as string[]);
-            const before = wordRaw.match(/^([^\w'-]+)(?=(((\d*(\w\.)+)|[a-zA-z'-]+|(\d+\.\d+)|(\d+(?!\.\d+)))))/);
-            const after = wordRaw.match(/(?<=(((\d*(\w\.)+))))([^\w'-]+)$/);
+            const wordSpelling = (wordRaw.match(/((([a-zA-Z]\.)+)|(\d+\.\d+)|(\d+(?!\.\d+))|([a-zA-z'-]+))/) as string[]);
+            const before = wordRaw.match(/^([^\w'-]+)(?=((((\w\.)+)|[a-zA-z'-]+|(\d+\.\d+)|(\d+(?!\.\d+)))))/);
+            const after1 = wordRaw.match(/(?<=((((\w\.){2,}))))([^\w'-]+)$/);
+            const after2 = wordRaw.match(/(?<=([a-zA-z'-]+|(\d+\.\d+)|(\d+(?!\.\d+))))([^\w'-]+)$/);
+            const after = after1?.length ? after1 : after2;
             const word: TextElement = {
                 type: 'word',
-                spelling: wordSpelling ? wordSpelling[0] : '',
-                before: before ? before[0] : '',
-                after: after ? after[0] : '',
+                spelling: wordSpelling ? wordSpelling[0] : undefined,
+                before: before ? before[0] : undefined,
+                after: after ? after[0] : undefined,
             };
             try {
                 if (!isNaN((wordSpelling as string[])[0] as unknown as number)) {
@@ -38,7 +40,7 @@ class TextEngine {
                 }
             } catch(e){}
             // if (word.type == 'number'){
-                console.log(word);
+                // console.log(word);
             // }
             return word;
         })

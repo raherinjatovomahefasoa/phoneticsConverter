@@ -1,5 +1,6 @@
 import { MonthlyCourse } from "./payment-engine/payment-engine";
 import TxtEngine from "./text-engine/text-engine";
+import axios from 'axios';
 
 export class MinsPerWeek {
     minutes?: number;
@@ -77,6 +78,18 @@ export class MobileMoney {
     owner?: string;
 }
 
-(async () => {
-    await TxtEngine().processTextFile();
-})();
+// (async () => {
+//     await TxtEngine().processTextFile();
+// })();
+
+// (async () => {
+//     const url = 'https://www.oxfordlearnersdictionaries.com/media/english/uk_pron/t/tes/test_/test__gb_1.mp3';
+//     const response = await axios.get(url, {
+//         responseType: 'arraybuffer',
+//         // maxRedirects: 5,
+//         // timeout: 5000,
+//         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+//     });
+//     console.log(response);
+// })();
+
