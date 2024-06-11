@@ -35,7 +35,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PhrasalVerb = exports.Reference = exports.ReferenceGroup = exports.NearbyWord = exports.WordEntry = exports.Phonetics = exports.SentenceExample = exports.SenseExample = exports.SenseEntry = exports.SenseTop = exports.Idiom = exports.PhrasalVerbEntry = exports.Sense = exports.Inflection = exports.VerbForm = exports.Variant = exports.Pronunciation = void 0;
+exports.PhrasalVerb = exports.Reference = exports.ReferenceGroup = exports.NearbyWord = exports.WordEntry = exports.Spelling = exports.Phonetics = exports.SentenceExample = exports.SenseExample = exports.SenseEntry = exports.SenseTop = exports.Idiom = exports.PhrasalVerbEntry = exports.Sense = exports.Inflection = exports.VerbForm = exports.Variant = exports.Pronunciation = void 0;
 const promises_1 = __importDefault(require("fs/promises"));
 const puppeteer_1 = __importDefault(require("puppeteer"));
 const jsdom_1 = require("jsdom");
@@ -80,6 +80,9 @@ exports.SentenceExample = SentenceExample;
 class Phonetics {
 }
 exports.Phonetics = Phonetics;
+class Spelling {
+}
+exports.Spelling = Spelling;
 class WordEntry {
 }
 exports.WordEntry = WordEntry;
@@ -100,6 +103,7 @@ class OALEnglishDictionary {
         this.linkBase = 'https://www.oxfordlearnersdictionaries.com/definition/english/';
         this.searchLink = 'https://www.oxfordlearnersdictionaries.com/search/english/?q=';
         this.logError = false;
+        this.chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
         this.userDataDir = './puppeteer-data/oadl-engine';
         this.sanitizeFileName = (fileName) => {
             // Replace characters not allowed in file names with underscores
@@ -124,6 +128,7 @@ class OALEnglishDictionary {
                 yield this.createUserDataDirectory();
                 this.browser = yield puppeteer_1.default.launch({
                     headless: 'new',
+                    executablePath: this.chromePath,
                     userDataDir: this.userDataDir,
                     args: ['--no-sandbox', '--disable-setuid-sandbox'],
                     devtools: false, // Disable DevTools
@@ -863,10 +868,11 @@ class OALEnglishDictionary {
         return result;
     }
     getWord(dom) {
-        let result = undefined;
+        let result = {};
         try {
             const parent = dom.querySelector('.webtop');
-            result = this.safeRun(() => { var _a, _b; return (_b = (_a = parent.querySelector('.headword')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
+            result.spelling = this.safeRun(() => { var _a, _b, _c; return (_c = (_b = (_a = parent.querySelector('.headword')) === null || _a === void 0 ? void 0 : _a.firstChild) === null || _b === void 0 ? void 0 : _b.textContent) === null || _c === void 0 ? void 0 : _c.trim(); });
+            result.superScript = this.safeRun(() => { var _a, _b; return (_b = (_a = parent.querySelector('.headword > .hm')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim(); });
         }
         catch (e) {
             this.log(e);

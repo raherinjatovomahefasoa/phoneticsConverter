@@ -73,11 +73,15 @@ export declare class Phonetics {
     british?: Pronunciation[];
     northAmerican?: Pronunciation[];
 }
+export declare class Spelling {
+    spelling?: string;
+    superScript?: string;
+}
 export declare class WordEntry {
     usage?: string;
     disclaimer?: string;
     link?: string;
-    spelling?: string;
+    spelling?: Spelling;
     phrasalVerbEntries?: PhrasalVerbEntry[];
     partOfSpeech?: string;
     labels?: string;
@@ -118,6 +122,7 @@ declare class OALEnglishDictionary {
     private currentUrl;
     private page;
     logError: boolean;
+    chromePath: string;
     private userDataDir;
     private createUserDataDirectory;
     private initialize;

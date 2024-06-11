@@ -39,7 +39,11 @@ class MobileMoney {
 }
 exports.MobileMoney = MobileMoney;
 // (async () => {
-//     await TxtEngine().processTextFile();
+//     const url = 'are1';
+//     const x = OALDic();
+//     // x.logError = true;
+//     const result = await x.searchWordLink(url);
+//     console.log(result);
 // })();
 // (async () => {
 //     const url = 'https://www.oxfordlearnersdictionaries.com/media/english/uk_pron/t/tes/test_/test__gb_1.mp3';
