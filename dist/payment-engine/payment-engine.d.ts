@@ -1,6 +1,6 @@
 export declare class MinsPerWeek {
-    minutes?: number;
     rate?: Rate;
+    minutes?: number;
     discount?: number;
 }
 export type Day = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';

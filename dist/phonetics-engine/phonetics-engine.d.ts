@@ -10,6 +10,7 @@ declare class PhoneticsEngine {
     private vowels;
     private allVowels;
     private stressedVowels;
+    private rColored;
     private twoClusterCons;
     private threeClusterCons;
     private ticks;

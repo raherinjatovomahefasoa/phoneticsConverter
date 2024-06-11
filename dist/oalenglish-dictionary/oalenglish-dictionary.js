@@ -188,7 +188,10 @@ class OALEnglishDictionary {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 // Use Axios to download the MP3 file
-                const response = yield axios_1.default.get(url, { responseType: 'arraybuffer' });
+                const response = yield axios_1.default.get(url, {
+                    responseType: 'arraybuffer',
+                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36' },
+                });
                 // Generate a unique filename
                 const uniqueString = (0, uuid_1.v4)();
                 const fileExtension = '.mp3'; // Assuming it's an MP3 file
